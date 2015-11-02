@@ -8,13 +8,14 @@ class FrameSaver : public QObject
 {
     Q_OBJECT
 public:
-    explicit FrameSaver(QString server, class QQuickView* view, QObject *parent = 0);
+    explicit FrameSaver(QString appUid, QString server, class QQuickView* view, QObject *parent = 0);
 
 public slots:
     void save();
     void socketError(QLocalSocket::LocalSocketError error);
 
 private:
+    QString m_appUid;
     class QQuickView* m_view;
     QLocalSocket* m_socket;
     class QSharedMemory* m_shared;

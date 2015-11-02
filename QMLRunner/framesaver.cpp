@@ -1,4 +1,5 @@
 #include "framesaver.h"
+#include "message.h"
 
 #include <QQuickView>
 #include <QImage>
@@ -10,7 +11,12 @@
 
 #include <QDebug>
 
-FrameSaver::FrameSaver(QString server, QQuickView* view, QObject *parent) : QObject(parent), m_view(view), m_socket(new QLocalSocket(this)), m_shared(new QSharedMemory("QMLIMAGES", this))
+FrameSaver::FrameSaver(QString appUid, QString server, QQuickView* view, QObject *parent) :
+    QObject(parent),
+    m_appUid(appUid),
+    m_view(view),
+    m_socket(new QLocalSocket(this)),
+    m_shared(new QSharedMemory(appUid, this))
 {
     qDebug() << "FrameSaver::FrameSaver";
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(socketError(QLocalSocket::LocalSocketError)));
@@ -56,9 +62,12 @@ void FrameSaver::save()
 //        QPainter p(&image);
 //        p.drawText(10, 20, QString::number(realSize));
 
-        QDataStream pingOut(m_socket);
-        pingOut << (int)1;
-        qDebug() << "FrameSaver::save";
+        UpdateMessage updateMessage(m_appUid);
+        updateMessage.write(m_socket);
+
+//        QDataStream pingOut(m_socket);
+//        pingOut << (int)1;
+//        qDebug() << "FrameSaver::save";
     }
 
 //     QString fileName(QDateTime::currentDateTime().toString("yyyy.MM.dd.HH.mm.ss.zzz.png"));

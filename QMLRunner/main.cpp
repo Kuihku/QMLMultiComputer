@@ -19,12 +19,13 @@ int main(int argc, char *argv[])
 
     QStringList args(app.arguments());
 
-    if (args.size() == 4) {
-        QString qmlPath(args.at(1));
-        QString mainQML(args.at(2));
-        QString server(args.at(3));
+    if (args.size() == 5) {
+        QString appUid(args.at(1));
+        QString qmlPath(args.at(2));
+        QString mainQML(args.at(3));
+        QString server(args.at(4));
 
-        qDebug() << "qmlPath:" << qmlPath << "- mainQML:" << mainQML << "- server:" << server;
+        qDebug() << "appUid:" << appUid << "- qmlPath:" << qmlPath << "- mainQML:" << mainQML << "- server:" << server;
 
         if (!QDir::setCurrent(qmlPath)) return -2;
 
@@ -34,7 +35,7 @@ int main(int argc, char *argv[])
 
         QQuickView quickView;
 
-        FrameSaver saver(server, &quickView);
+        FrameSaver saver(appUid, server, &quickView);
 
         QObject::connect(quickView.engine(), SIGNAL(quit()), &app, SLOT(quit()));
 

@@ -8,11 +8,12 @@
 #include <QDebug>
 
 enum MessageType {
-    Undefined,
-    Launch = 1,
-    Move = 2,
-    Size = 3,
-    Close = 4
+    Undefined = 0,
+    Update = 1,
+    Launch,
+    Move,
+    Size,
+    Close
 };
 
 #if defined(COMMUNICATION_LIBRARY)
@@ -26,8 +27,8 @@ class COMMUNICATIONSHARED_EXPORT Message : public QObject
     Q_OBJECT
 
 public:
-    Message(quint32 appUid = 0, int messageType = Undefined, QObject* parent = NULL);
-    quint32 appUid() const;
+    Message(QString appUid = QString(), int messageType = Undefined, QObject* parent = NULL);
+    QString appUid() const;
     int type() const;
     static Message* read(class QIODevice* socket);
     bool write(class QIODevice* socket);
@@ -39,25 +40,44 @@ private:
     Message(const Message& other);
 
 protected:
-    quint32 m_appUid;
+    QString m_appUid;
     int m_messageType;
 
 };
 
 COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const Message& m);
 
+class COMMUNICATIONSHARED_EXPORT UpdateMessage : public Message
+{
+    Q_OBJECT
+
+public:
+    UpdateMessage(QString appUid = QString(), QObject* parent = NULL);
+
+protected:
+    UpdateMessage(QString appUid, QDataStream& ds);
+
+private:
+    UpdateMessage(const UpdateMessage& other);
+
+protected:
+    friend class Message;
+
+};
+
+COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const UpdateMessage& lm);
+
 class COMMUNICATIONSHARED_EXPORT LaunchMessage : public Message
 {
     Q_OBJECT
 
 public:
-    LaunchMessage(quint32 appUid = 0, const QString& data = QString(), QObject* parent = NULL);
-//    virtual bool write(class QIODevice* socket);
+    LaunchMessage(QString appUid = QString(), const QString& data = QString(), QObject* parent = NULL);
     QString data() const;
     void setData(QString data);
 
 protected:
-    LaunchMessage(quint32 appUid, QDataStream& ds);
+    LaunchMessage(QString appUid, QDataStream& ds);
     virtual void writeData(QDataStream& ds);
 
 private:
@@ -76,8 +96,7 @@ class COMMUNICATIONSHARED_EXPORT MoveMessage : public Message
     Q_OBJECT
 
 public:
-    MoveMessage(quint32 appUid = 0, int x = 0, int y = 0, QObject* parent = NULL);
-//    virtual bool write(class QIODevice* socket);
+    MoveMessage(QString appUid = QString(), int x = 0, int y = 0, QObject* parent = NULL);
     QPoint topLeft() const;
     int x() const;
     int y() const;
@@ -85,7 +104,7 @@ public:
     void setY(int y);
 
 protected:
-    MoveMessage(quint32 appUid, QDataStream& ds);
+    MoveMessage(QString appUid, QDataStream& ds);
     virtual void writeData(QDataStream& ds);
 
 private:
@@ -104,8 +123,7 @@ class COMMUNICATIONSHARED_EXPORT SizeMessage : public Message
     Q_OBJECT
 
 public:
-    SizeMessage(quint32 appUid = 0, int height = 0, int width = 0, QObject* parent = NULL);
-//    virtual bool write(class QIODevice* socket);
+    SizeMessage(QString appUid = QString(), int height = 0, int width = 0, QObject* parent = NULL);
     QSize size() const;
     int width() const;
     int height() const;
@@ -113,7 +131,7 @@ public:
     void setWidth(int width);
 
 protected:
-    SizeMessage(quint32 appUid, QDataStream& ds);
+    SizeMessage(QString appUid, QDataStream& ds);
     virtual void writeData(QDataStream& ds);
 
 private:

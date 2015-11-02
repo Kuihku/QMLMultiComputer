@@ -1,0 +1,8 @@
+northwest: 192.168.1.1
+north: 192.168.1.2
+northeast: 192.168.1.3
+west: 192.168.1.4
+east: 192.168.1.6
+southwest: 192.168.1.7
+south: 192.168.1.8
+southeast: 192.168.1.9

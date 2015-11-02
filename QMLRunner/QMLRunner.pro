@@ -14,3 +14,4 @@ HEADERS += \
 DISTFILES += \
     QML/main.qml
 
+INCLUDEPATH += ../Common

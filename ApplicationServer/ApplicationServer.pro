@@ -8,8 +8,17 @@ TEMPLATE = app
 
 SOURCES += \
     main.cpp \
-    mainview.cpp
+    server.cpp \
+    localconnection.cpp \
+    remoteconnection.cpp
 
 HEADERS += \
-    mainview.h
+    server.h \
+    localconnection.h \
+    remoteconnection.h
 
+
+DEFINES += SERVER_CONFIG=\\\"$$PWD/server_config.txt\\\"
+
+DISTFILES += \
+    server_config.txt

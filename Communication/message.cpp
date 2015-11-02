@@ -11,6 +11,7 @@
 
 #define MSGTYPETOSTRING(type) \
     QString(type == Undefined ? "Undefined" :\
+    type == Update ? "Update" :\
     type == Launch ? "Launch" :\
     type == Move ? "Move" :\
     type == Size ? "Size" :\
@@ -41,12 +42,19 @@ Message* Message::read(QIODevice* socket)
         socket->bytesAvailable() > (int)sizeof(quint32)) {
         QDataStream ds(socket);
         qint32 messageType;
-        quint32 appUid, dataSize;
+        quint32 dataSize;
+        QString appUid;
         ds >> dataSize;
         qint64 bytesAvailable(socket->bytesAvailable());
         if (bytesAvailable < dataSize) return msg;
         ds >> messageType >> appUid;
         switch (messageType) {
+        case Update : {
+            if (bytesAvailable > 0) {
+                msg = new UpdateMessage(appUid, ds);
+            }
+            break;
+        }
         case Launch : {
             if (bytesAvailable > 0) {
                 msg = new LaunchMessage(appUid, ds);
@@ -57,18 +65,12 @@ Message* Message::read(QIODevice* socket)
             if (bytesAvailable >= (qint64)(2 * sizeof(qint32))) {
                 msg = new MoveMessage(appUid, ds);
             }
-//            else {
-//                socket->readAll();
-//            }
             break;
         }
         case Size : {
             if (bytesAvailable >= (qint64)(2 * sizeof(qint32))) {
                 msg = new SizeMessage(appUid, ds);
             }
-//            else {
-//                socket->readAll();
-//            }
             break;
         }
         default : {
@@ -111,9 +113,35 @@ QDebug operator<<(QDebug d, const Message& m)
     return d << QString("Message(appId: %1, type: %2)").arg(m.appUid()).arg(MSGTYPETOSTRING(m.type())).toLocal8Bit().data();
 }
 
+
+// UpdateMessage
+
+UpdateMessage::UpdateMessage(quint32 appUid, const QString &data, QObject *parent) :
+    Message(appUid, Update, parent)
+{
+
+}
+
+UpdateMessage::UpdateMessage(quint32 appUid, QDataStream &ds) :
+    Message(appUid, Update, NULL)
+{
+
+}
+
+UpdateMessage::UpdateMessage(const UpdateMessage& other)
+{
+
+}
+
+QDebug operator<<(QDebug d, const UpdateMessage& m)
+{
+    return d << QString("UpdateMessage(appId: %1, type: %2)").arg(m.appUid()).arg(MSGTYPETOSTRING(m.type())).toLocal8Bit().data();
+}
+
+
 // LaunchMessage
 
-LaunchMessage::LaunchMessage(quint32 appUid, const QString& data, QObject* parent) :
+LaunchMessage::LaunchMessage(const QString& data, QObject* parent) :
     Message(appUid, Launch, parent),
     m_data(data)
 {
@@ -135,21 +163,6 @@ void LaunchMessage::writeData(QDataStream& ds)
 {
     ds << m_data;
 }
-
-//bool LaunchMessage::write(QIODevice* socket)
-//{
-//    if (socket &&
-//        socket->isWritable()) {
-//        QByteArray data;
-//        QDataStream ds(&data, QIODevice::WriteOnly);
-//        ds << (quint32)0 << (qint32)m_messageType << m_appUid << m_data;
-//        ds.device()->seek(0);
-//        ds << (quint32)(data.size() - sizeof(quint32));
-//        socket->write(data);
-//        return true;
-//    }
-//    return false;
-//}
 
 QString LaunchMessage::data() const
 {
@@ -193,21 +206,6 @@ void MoveMessage::writeData(QDataStream& ds)
 {
     ds << (qint32)m_move.x() << (qint32)m_move.y();
 }
-
-//bool MoveMessage::write(QIODevice* socket)
-//{
-//    if (socket &&
-//        socket->isWritable()) {
-//        QByteArray data;
-//        QDataStream ds(&data, QIODevice::WriteOnly);
-//        ds << (quint32)0 << (qint32)m_messageType << m_appUid << (qint32)m_move.x() << (qint32)m_move.y();
-//        ds.device()->seek(0);
-//        ds << (quint32)(data.size() - sizeof(quint32));
-//        socket->write(data);
-//        return true;
-//    }
-//    return false;
-//}
 
 QPoint MoveMessage::topLeft() const
 {
@@ -266,21 +264,6 @@ void SizeMessage::writeData(QDataStream& ds)
 {
     ds << (qint32)m_size.width() << (qint32)m_size.height();
 }
-
-//bool SizeMessage::write(QIODevice* socket)
-//{
-//    if (socket &&
-//        socket->isWritable()) {
-//        QByteArray data;
-//        QDataStream ds(&data, QIODevice::WriteOnly);
-//        ds << (quint32)0 << (qint32)m_messageType << m_appUid << (qint32)m_size.width() << (qint32)m_size.height();
-//        ds.device()->seek(0);
-//        ds << (quint32)(data.size() - sizeof(quint32));
-//        socket->write(data);
-//        return true;
-//    }
-//    return false;
-//}
 
 QSize SizeMessage::size() const
 {
