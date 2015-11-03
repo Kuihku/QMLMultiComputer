@@ -19,10 +19,13 @@ FrameSaver::FrameSaver(QString appUid, QString server, QQuickView* view, QObject
     m_shared(new QSharedMemory(appUid, this))
 {
     qDebug() << "FrameSaver::FrameSaver";
+    connect(m_socket, SIGNAL(connected()), this, SLOT(socketConnected()));
+    connect(m_socket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(socketError(QLocalSocket::LocalSocketError)));
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
     m_socket->connectToServer(server);
     connect(view, SIGNAL(frameSwapped()), this, SLOT(save()));
+    qDebug() << "FrameSaver::FrameSaver - END";
 }
 
 void FrameSaver::save()
@@ -81,5 +84,16 @@ void FrameSaver::save()
 void FrameSaver::socketError(QLocalSocket::LocalSocketError error)
 {
     qDebug() << "FrameSaver::socketError - error:" << error;
+}
+
+void FrameSaver::socketConnected()
+{
+    GeometryMessage gm(m_appUid, m_view->geometry());
+    gm.write(m_socket);
+}
+
+void FrameSaver::socketDisconnected()
+{
+
 }
 

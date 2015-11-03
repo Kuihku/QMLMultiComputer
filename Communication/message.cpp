@@ -76,6 +76,12 @@ Message* Message::read(QIODevice* socket)
             }
             break;
         }
+        case Geometry : {
+            if (bytesAvailable >= (qint64)(4 * sizeof(qint32))) {
+                msg = new GeometryMessage(appUid, ds);
+            }
+            break;
+        }
         default : {
 //            socket->readAll();
         }
@@ -295,6 +301,99 @@ void SizeMessage::setWidth(int width)
 QDebug operator<<(QDebug d, const SizeMessage& sm)
 {
     return d << QString("SizeMessage(appId: %1, size:(%2, %3))").arg(sm.appUid()).arg(sm.width()).arg(sm.height()).toLocal8Bit().data();
+}
+
+
+// Geometry
+
+GeometryMessage::GeometryMessage(QString appUid, int x, int y, int width, int height) :
+    Message(appUid, Geometry),
+    m_geometry(x, y, width, height)
+{
+
+}
+
+GeometryMessage::GeometryMessage(QString appUid, QRect geometry) :
+    Message(appUid, Geometry),
+    m_geometry(geometry)
+{
+}
+
+QRect GeometryMessage::geometry() const
+{
+    return m_geometry;
+}
+
+int GeometryMessage::x() const
+{
+    return m_geometry.x();
+}
+
+int GeometryMessage::y() const
+{
+    return m_geometry.y();
+}
+
+int GeometryMessage::width() const
+{
+    return m_geometry.width();
+}
+
+int GeometryMessage::height() const
+{
+    return m_geometry.height();
+}
+
+void GeometryMessage::setX(int x)
+{
+    return m_geometry.setX(x);
+}
+
+void GeometryMessage::setY(int y)
+{
+    return m_geometry.setY(y);
+}
+
+void GeometryMessage::setHeight(int height)
+{
+    return m_geometry.setHeight(height);
+}
+
+void GeometryMessage::setWidth(int width)
+{
+    return m_geometry.setWidth(width);
+}
+
+void GeometryMessage::setGeometry(QRect geometry)
+{
+    m_geometry = geometry;
+}
+
+GeometryMessage::GeometryMessage(QString appUid, QDataStream &ds) :
+    Message(appUid, Geometry)
+{
+    qint32 x, y, w, h;
+    ds >> x >> y >> w >> h;
+    m_geometry.setX(x);;
+    m_geometry.setY(y);;
+    m_geometry.setWidth(w);
+    m_geometry.setHeight(h);
+}
+
+void GeometryMessage::writeData(QDataStream &ds)
+{
+    ds << (qint32)m_geometry.x() << (qint32)m_geometry.y() << (qint32)m_geometry.width() << (qint32)m_geometry.height();
+}
+
+GeometryMessage::GeometryMessage(const GeometryMessage &other) :
+    Message(other.m_appUid, other.m_messageType),
+    m_geometry(other.m_geometry)
+{
+}
+
+QDebug operator<<(QDebug d, const GeometryMessage& gm)
+{
+    return d << QString("GeometryMessage(appId: %1, geometry:(%2, %3, %4, %5))").arg(gm.appUid()).arg(gm.x()).arg(gm.y()).arg(gm.width()).arg(gm.height()).toLocal8Bit().data();
 }
 
 // EOF

@@ -13,6 +13,8 @@ public:
 public slots:
     void save();
     void socketError(QLocalSocket::LocalSocketError error);
+    void socketConnected();
+    void socketDisconnected();
 
 private:
     QString m_appUid;

@@ -1,18 +1,21 @@
 #include "server.h"
 #include "localconnection.h"
 #include "remoteconnection.h"
+#include "mainview.h"
 
-#include <QWidget>
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QTcpServer>
 #include <QFile>
+#include <QPainter>
+
+#include <QCoreApplication>
 
 #include <QDebug>
 
 Server::Server(QObject *parent) :
     QObject(parent),
-    m_view(new QWidget),
+    m_view(new MainView(this)),
     m_localServer(new QLocalServer(this))
 {
     parseConfigFile();
@@ -20,7 +23,7 @@ Server::Server(QObject *parent) :
 
     connect(m_localServer, SIGNAL(newConnection()), this, SLOT(newLocalConnection()));
 
-    if (!m_localServer->listen("QMLServer")) {
+    if (!m_localServer->listen("QML1")) {
         qWarning() << "Server::Server - localserver listening error:" << m_localServer->errorString();
     }
 
@@ -31,12 +34,49 @@ Server::~Server()
     delete m_view;
 }
 
+void Server::paintWindows(QRect rect, QRegion region, class QPainter* painter)
+{
+    Q_UNUSED(rect)
+    int paintCount(m_localConnections.count());
+    for (int i(0); i < paintCount; i++) {
+        LocalConnection* localConnection(m_localConnections.at(i));
+        if (region.contains(localConnection->geometry())) {
+            localConnection->paintImage(painter);
+        }
+    }
+}
+
 void Server::newLocalConnection()
 {
+    qDebug("Server::newLocalConnection");
     while (m_localServer->hasPendingConnections()) {
         QLocalSocket* socket(m_localServer->nextPendingConnection());
         LocalConnection* localConnection(new LocalConnection(socket, this));
         m_localConnections.append(localConnection);
+        connect(localConnection, SIGNAL(updateRequest()), this, SLOT(localUpdate()));
+        connect(localConnection, SIGNAL(connectionClosed()), this, SLOT(localConnectionClosed()));
+    }
+}
+
+void Server::localUpdate()
+{
+    LocalConnection* localConnection(qobject_cast<LocalConnection*>(sender()));
+    if (localConnection) {
+        m_view->update(localConnection->geometry());
+    }
+}
+
+void Server::localConnectionClosed()
+{
+    LocalConnection* localConnection(qobject_cast<LocalConnection*>(sender()));
+    if (localConnection) {
+        m_view->update(localConnection->geometry());
+        m_localConnections.removeAll(localConnection);
+        localConnection->deleteLater();
+    }
+    if (m_localConnections.isEmpty()) {
+        m_localServer->close();
+        qApp->exit();
     }
 }
 

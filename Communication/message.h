@@ -4,6 +4,7 @@
 #include <QString>
 #include <QPoint>
 #include <QSize>
+#include <QRect>
 #include <QDebug>
 
 enum MessageType {
@@ -12,7 +13,8 @@ enum MessageType {
     Launch,
     Move,
     Size,
-    Close
+    Close,
+    Geometry
 };
 
 #if defined(COMMUNICATION_LIBRARY)
@@ -118,7 +120,7 @@ class COMMUNICATIONSHARED_EXPORT SizeMessage : public Message
 {
 
 public:
-    SizeMessage(QString appUid = QString(), int height = 0, int width = 0);
+    SizeMessage(QString appUid = QString(), int width = 0, int height = 0);
     QSize size() const;
     int width() const;
     int height() const;
@@ -139,5 +141,37 @@ protected:
 };
 
 COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const SizeMessage& sm);
+
+class COMMUNICATIONSHARED_EXPORT GeometryMessage : public Message
+{
+
+public:
+    GeometryMessage(QString appUid = QString(), int x = 0, int y = 0, int width = 0, int height = 0);
+    GeometryMessage(QString appUid, QRect geometry);
+    QRect geometry() const;
+    int x() const;
+    int y() const;
+    int width() const;
+    int height() const;
+    void setX(int x);
+    void setY(int y);
+    void setHeight(int height);
+    void setWidth(int width);
+    void setGeometry(QRect geometry);
+
+protected:
+    GeometryMessage(QString appUid, QDataStream& ds);
+    virtual void writeData(QDataStream& ds);
+
+private:
+    GeometryMessage(const GeometryMessage& other);
+
+protected:
+    QRect m_geometry;
+
+    friend class Message;
+};
+
+COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const GeometryMessage& gm);
 
 #endif // MESSAGE_H

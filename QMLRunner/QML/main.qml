@@ -30,15 +30,16 @@ Rectangle {
 
     Timer {
         id: timer;
-        interval: 50;
+        interval: 100;
         running: true;
         repeat: true;
         property int counter: 0;
         triggeredOnStart: true;
         onTriggered: {
 //            console.debug("QML Timer counter: " + timer.counter);
-            if (timer.counter++ > 100) {
-                Qt.quit();
+            if (timer.counter++ >= 65535) {
+                timer.counter = 0;
+//                Qt.quit();
             }
 //            timer.interval = 100 + (Math.random() * 1000);
 //            timer.start();
