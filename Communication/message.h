@@ -1,7 +1,6 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#include <QObject>
 #include <QString>
 #include <QPoint>
 #include <QSize>
@@ -22,12 +21,12 @@ enum MessageType {
 #  define COMMUNICATIONSHARED_EXPORT Q_DECL_IMPORT
 #endif
 
-class COMMUNICATIONSHARED_EXPORT Message : public QObject
+class COMMUNICATIONSHARED_EXPORT Message
 {
-    Q_OBJECT
 
 public:
-    Message(QString appUid = QString(), int messageType = Undefined, QObject* parent = NULL);
+    Message(QString appUid = QString(), int messageType = Undefined);
+    virtual ~Message();
     QString appUid() const;
     int type() const;
     static Message* read(class QIODevice* socket);
@@ -49,10 +48,9 @@ COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const Message& m);
 
 class COMMUNICATIONSHARED_EXPORT UpdateMessage : public Message
 {
-    Q_OBJECT
 
 public:
-    UpdateMessage(QString appUid = QString(), QObject* parent = NULL);
+    UpdateMessage(QString appUid = QString());
 
 protected:
     UpdateMessage(QString appUid, QDataStream& ds);
@@ -69,10 +67,9 @@ COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const UpdateMessage& lm);
 
 class COMMUNICATIONSHARED_EXPORT LaunchMessage : public Message
 {
-    Q_OBJECT
 
 public:
-    LaunchMessage(QString appUid = QString(), const QString& data = QString(), QObject* parent = NULL);
+    LaunchMessage(QString appUid = QString(), const QString& data = QString());
     QString data() const;
     void setData(QString data);
 
@@ -93,10 +90,9 @@ COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const LaunchMessage& lm);
 
 class COMMUNICATIONSHARED_EXPORT MoveMessage : public Message
 {
-    Q_OBJECT
 
 public:
-    MoveMessage(QString appUid = QString(), int x = 0, int y = 0, QObject* parent = NULL);
+    MoveMessage(QString appUid = QString(), int x = 0, int y = 0);
     QPoint topLeft() const;
     int x() const;
     int y() const;
@@ -120,10 +116,9 @@ COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const MoveMessage& mm);
 
 class COMMUNICATIONSHARED_EXPORT SizeMessage : public Message
 {
-    Q_OBJECT
 
 public:
-    SizeMessage(QString appUid = QString(), int height = 0, int width = 0, QObject* parent = NULL);
+    SizeMessage(QString appUid = QString(), int height = 0, int width = 0);
     QSize size() const;
     int width() const;
     int height() const;

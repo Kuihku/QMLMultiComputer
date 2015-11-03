@@ -13,6 +13,9 @@ public:
     ~Server();
 
 
+protected slots:
+    void newLocalConnection();
+
 private:
     void parseConfigFile();
 

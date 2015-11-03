@@ -33,3 +33,6 @@ Libs
 *.pro.user
 Makefile*
 *~
+ApplicationServer/ApplicationServer
+QMLRunner/QMLRunner
+

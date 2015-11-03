@@ -54,8 +54,8 @@ void FrameSaver::save()
 
         }
         m_shared->lock();
-        char *to = (char*)m_shared->data();
-        const char *from = buffer.data().data();
+        char* to((char*)m_shared->data());
+        const char* from(buffer.data().data());
         memcpy(to, from, qMin(m_shared->size(), size));
         m_shared->unlock();
 

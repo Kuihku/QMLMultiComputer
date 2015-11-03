@@ -10,21 +10,24 @@
 // Message
 
 #define MSGTYPETOSTRING(type) \
-    QString(type == Undefined ? "Undefined" :\
-    type == Update ? "Update" :\
-    type == Launch ? "Launch" :\
-    type == Move ? "Move" :\
-    type == Size ? "Size" :\
+    QString(type == Undefined ? "Undefined" : \
+    type == Update ? "Update" : \
+    type == Launch ? "Launch" : \
+    type == Move ? "Move" : \
+    type == Size ? "Size" : \
     type == Close ? "Close" : "Type unknown")
 
-Message::Message(quint32 appUid, int messageType, QObject* parent) :
-    QObject(parent),
+Message::Message(QString appUid, int messageType) :
     m_appUid(appUid),
     m_messageType(messageType)
 {
 }
 
-quint32 Message::appUid() const
+Message::~Message()
+{
+}
+
+QString Message::appUid() const
 {
     return m_appUid;
 }
@@ -116,21 +119,20 @@ QDebug operator<<(QDebug d, const Message& m)
 
 // UpdateMessage
 
-UpdateMessage::UpdateMessage(quint32 appUid, const QString &data, QObject *parent) :
-    Message(appUid, Update, parent)
+UpdateMessage::UpdateMessage(QString appUid) :
+    Message(appUid, Update)
 {
-
 }
 
-UpdateMessage::UpdateMessage(quint32 appUid, QDataStream &ds) :
-    Message(appUid, Update, NULL)
+UpdateMessage::UpdateMessage(QString appUid, QDataStream &ds) :
+    Message(appUid, Update)
 {
-
+    Q_UNUSED(ds)
 }
 
-UpdateMessage::UpdateMessage(const UpdateMessage& other)
+UpdateMessage::UpdateMessage(const UpdateMessage& other) :
+    Message(other.m_appUid, Update)
 {
-
 }
 
 QDebug operator<<(QDebug d, const UpdateMessage& m)
@@ -141,20 +143,20 @@ QDebug operator<<(QDebug d, const UpdateMessage& m)
 
 // LaunchMessage
 
-LaunchMessage::LaunchMessage(const QString& data, QObject* parent) :
-    Message(appUid, Launch, parent),
+LaunchMessage::LaunchMessage(QString appUid, const QString& data) :
+    Message(appUid, Launch),
     m_data(data)
 {
 }
 
-LaunchMessage::LaunchMessage(quint32 appUid, QDataStream& ds) :
-    Message(appUid, Launch, NULL)
+LaunchMessage::LaunchMessage(QString appUid, QDataStream& ds) :
+    Message(appUid, Launch)
 {
     ds >> m_data;
 }
 
 LaunchMessage::LaunchMessage(const LaunchMessage& other) :
-    Message(other.m_appUid, other.m_messageType, other.parent()),
+    Message(other.m_appUid, Launch),
     m_data(other.m_data)
 {
 }
@@ -181,14 +183,14 @@ QDebug operator<<(QDebug d, const LaunchMessage& lm)
 
 // MoveMessage
 
-MoveMessage::MoveMessage(quint32 appUid, int x, int y, QObject* parent) :
-    Message(appUid, Move, parent),
+MoveMessage::MoveMessage(QString appUid, int x, int y) :
+    Message(appUid, Move),
     m_move(x, y)
 {
 }
 
-MoveMessage::MoveMessage(quint32 appUid, QDataStream& ds) :
-    Message(appUid, Move, NULL)
+MoveMessage::MoveMessage(QString appUid, QDataStream& ds) :
+    Message(appUid, Move)
 {
     qint32 x, y;
     ds >> x >> y;
@@ -197,7 +199,7 @@ MoveMessage::MoveMessage(quint32 appUid, QDataStream& ds) :
 }
 
 MoveMessage::MoveMessage(const MoveMessage& other) :
-    Message(other.m_appUid, other.m_messageType, other.parent()),
+    Message(other.m_appUid, other.m_messageType),
     m_move(other.m_move)
 {
 }
@@ -239,14 +241,14 @@ QDebug operator<<(QDebug d, const MoveMessage& mm)
 
 // SizeMessage
 
-SizeMessage::SizeMessage(quint32 appUid, int width, int height, QObject* parent) :
-    Message(appUid, Size, parent),
+SizeMessage::SizeMessage(QString appUid, int width, int height) :
+    Message(appUid, Size),
     m_size(width, height)
 {
 }
 
-SizeMessage::SizeMessage(quint32 appUid, QDataStream& ds) :
-    Message(appUid, Size, NULL)
+SizeMessage::SizeMessage(QString appUid, QDataStream& ds) :
+    Message(appUid, Size)
 {
     qint32 w, h;
     ds >> w >> h;
@@ -255,7 +257,7 @@ SizeMessage::SizeMessage(quint32 appUid, QDataStream& ds) :
 }
 
 SizeMessage::SizeMessage(const SizeMessage& other) :
-    Message(other.m_appUid, other.m_messageType, other.parent()),
+    Message(other.m_appUid, other.m_messageType),
     m_size(other.m_size)
 {
 }

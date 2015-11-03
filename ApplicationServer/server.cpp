@@ -1,8 +1,10 @@
 #include "server.h"
+#include "localconnection.h"
 #include "remoteconnection.h"
 
 #include <QWidget>
 #include <QLocalServer>
+#include <QLocalSocket>
 #include <QTcpServer>
 #include <QFile>
 
@@ -10,15 +12,32 @@
 
 Server::Server(QObject *parent) :
     QObject(parent),
-    m_view(new QWidget)
+    m_view(new QWidget),
+    m_localServer(new QLocalServer(this))
 {
     parseConfigFile();
     m_view->showFullScreen();
+
+    connect(m_localServer, SIGNAL(newConnection()), this, SLOT(newLocalConnection()));
+
+    if (!m_localServer->listen("QMLServer")) {
+        qWarning() << "Server::Server - localserver listening error:" << m_localServer->errorString();
+    }
+
 }
 
 Server::~Server()
 {
     delete m_view;
+}
+
+void Server::newLocalConnection()
+{
+    while (m_localServer->hasPendingConnections()) {
+        QLocalSocket* socket(m_localServer->nextPendingConnection());
+        LocalConnection* localConnection(new LocalConnection(socket, this));
+        m_localConnections.append(localConnection);
+    }
 }
 
 void Server::parseConfigFile()

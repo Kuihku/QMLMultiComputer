@@ -9,9 +9,7 @@
 
 #include <QDebug>
 
-
 #include "framesaver.h"
-
 
 int main(int argc, char *argv[])
 {
@@ -57,6 +55,7 @@ int main(int argc, char *argv[])
 
         return app.exec();
     }
+    qWarning("Startup: QMLRunner appUid qmlPath mainQML server");
     return -1;
 }
 
