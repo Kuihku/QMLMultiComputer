@@ -10,12 +10,12 @@
 // Message
 
 #define MSGTYPETOSTRING(type) \
-    QString(type == Undefined ? "Undefined" : \
-    type == Update ? "Update" : \
-    type == Launch ? "Launch" : \
-    type == Move ? "Move" : \
-    type == Size ? "Size" : \
-    type == Close ? "Close" : "Type unknown")
+    QString(type == MessageType::Undefined ? "Undefined" : \
+    type == MessageType::Update ? "Update" : \
+    type == MessageType::Launch ? "Launch" : \
+    type == MessageType::Move ? "Move" : \
+    type == MessageType::Size ? "Size" : \
+    type == MessageType::Close ? "Close" : "Type unknown")
 
 Message::Message(QString appUid, int messageType) :
     m_appUid(appUid),
@@ -56,31 +56,31 @@ Message* Message::read(QIODevice* socket)
         ds >> messageType >> appUid;
         qDebug() << "Message::read - messageType:" << messageType << "- appUid:" << appUid;
         switch (messageType) {
-        case Update : {
+        case MessageType::Update : {
             if (bytesAvailable > 0) {
                 msg = new UpdateMessage(appUid, ds);
             }
             break;
         }
-        case Launch : {
+        case MessageType::Launch : {
             if (bytesAvailable > 0) {
                 msg = new LaunchMessage(appUid, ds);
             }
             break;
         }
-        case Move : {
+        case MessageType::Move : {
             if (bytesAvailable >= (qint64)(2 * sizeof(qint32))) {
                 msg = new MoveMessage(appUid, ds);
             }
             break;
         }
-        case Size : {
+        case MessageType::Size : {
             if (bytesAvailable >= (qint64)(2 * sizeof(qint32))) {
                 msg = new SizeMessage(appUid, ds);
             }
             break;
         }
-        case Geometry : {
+        case MessageType::Geometry : {
             if (bytesAvailable >= (qint64)(4 * sizeof(qint32))) {
                 msg = new GeometryMessage(appUid, ds);
             }
@@ -103,7 +103,7 @@ bool Message::write(QIODevice* socket)
 {
     if (socket &&
         socket->isWritable() &&
-        m_messageType != Undefined) {
+        m_messageType != MessageType::Undefined) {
         QByteArray data;
         QDataStream ds(&data, QIODevice::WriteOnly);
         ds << (quint32)0 << (qint32)m_messageType << m_appUid;
@@ -130,12 +130,12 @@ QDebug operator<<(QDebug d, const Message& m)
 // UpdateMessage
 
 UpdateMessage::UpdateMessage(QString appUid) :
-    Message(appUid, Update)
+    Message(appUid, MessageType::Update)
 {
 }
 
 UpdateMessage::UpdateMessage(QString appUid, QDataStream &ds) :
-    Message(appUid, Update)
+    Message(appUid, MessageType::Update)
 {
     Q_UNUSED(ds)
 }
@@ -154,19 +154,19 @@ QDebug operator<<(QDebug d, const UpdateMessage& m)
 // LaunchMessage
 
 LaunchMessage::LaunchMessage(QString appUid, const QString& data) :
-    Message(appUid, Launch),
+    Message(appUid, MessageType::Launch),
     m_data(data)
 {
 }
 
 LaunchMessage::LaunchMessage(QString appUid, QDataStream& ds) :
-    Message(appUid, Launch)
+    Message(appUid, MessageType::Launch)
 {
     ds >> m_data;
 }
 
 LaunchMessage::LaunchMessage(const LaunchMessage& other) :
-    Message(other.m_appUid, Launch),
+    Message(other.m_appUid, MessageType::Launch),
     m_data(other.m_data)
 {
 }
@@ -194,13 +194,13 @@ QDebug operator<<(QDebug d, const LaunchMessage& lm)
 // MoveMessage
 
 MoveMessage::MoveMessage(QString appUid, int x, int y) :
-    Message(appUid, Move),
+    Message(appUid, MessageType::Move),
     m_move(x, y)
 {
 }
 
 MoveMessage::MoveMessage(QString appUid, QDataStream& ds) :
-    Message(appUid, Move)
+    Message(appUid, MessageType::Move)
 {
     qint32 x, y;
     ds >> x >> y;
@@ -252,13 +252,13 @@ QDebug operator<<(QDebug d, const MoveMessage& mm)
 // SizeMessage
 
 SizeMessage::SizeMessage(QString appUid, int width, int height) :
-    Message(appUid, Size),
+    Message(appUid, MessageType::Size),
     m_size(width, height)
 {
 }
 
 SizeMessage::SizeMessage(QString appUid, QDataStream& ds) :
-    Message(appUid, Size)
+    Message(appUid, MessageType::Size)
 {
     qint32 w, h;
     ds >> w >> h;
@@ -311,14 +311,14 @@ QDebug operator<<(QDebug d, const SizeMessage& sm)
 // Geometry
 
 GeometryMessage::GeometryMessage(QString appUid, int x, int y, int width, int height) :
-    Message(appUid, Geometry),
+    Message(appUid, MessageType::Geometry),
     m_geometry(x, y, width, height)
 {
 
 }
 
 GeometryMessage::GeometryMessage(QString appUid, QRect geometry) :
-    Message(appUid, Geometry),
+    Message(appUid, MessageType::Geometry),
     m_geometry(geometry)
 {
 }
@@ -374,7 +374,7 @@ void GeometryMessage::setGeometry(QRect geometry)
 }
 
 GeometryMessage::GeometryMessage(QString appUid, QDataStream &ds) :
-    Message(appUid, Geometry)
+    Message(appUid, MessageType::Geometry)
 {
     qint32 x, y, w, h;
     ds >> x >> y >> w >> h;

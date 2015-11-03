@@ -7,15 +7,18 @@
 #include <QRect>
 #include <QDebug>
 
-enum MessageType {
-    Undefined = 0,
-    Update = 1,
-    Launch,
-    Move,
-    Size,
-    Close,
-    Geometry
-};
+
+namespace MessageType {
+    enum {
+        Undefined = 0,
+        Update = 1,
+        Launch,
+        Move,
+        Size,
+        Close,
+        Geometry
+    };
+}
 
 #if defined(COMMUNICATION_LIBRARY)
 #  define COMMUNICATIONSHARED_EXPORT Q_DECL_EXPORT
@@ -27,7 +30,7 @@ class COMMUNICATIONSHARED_EXPORT Message
 {
 
 public:
-    Message(QString appUid = QString(), int messageType = Undefined);
+    Message(QString appUid = QString(), int messageType = MessageType::Undefined);
     virtual ~Message();
     QString appUid() const;
     int type() const;

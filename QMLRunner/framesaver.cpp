@@ -23,8 +23,11 @@ FrameSaver::FrameSaver(QString appUid, QString server, QQuickView* view, QObject
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(socketError(QLocalSocket::LocalSocketError)));
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
+    connect(m_socket, SIGNAL(bytesWritten(qint64)), this, SLOT(socketBytesWritten(qint64)));
     m_socket->connectToServer(server);
     connect(view, SIGNAL(frameSwapped()), this, SLOT(save()));
+    connect(view, SIGNAL(widthChanged(int)), this, SLOT(viewSizeChanged()));
+    connect(view, SIGNAL(heightChanged(int)), this, SLOT(viewSizeChanged()));
     qDebug() << "FrameSaver::FrameSaver - END";
 }
 
@@ -70,7 +73,7 @@ void FrameSaver::save()
 
 //        QDataStream pingOut(m_socket);
 //        pingOut << (int)1;
-        qDebug() << "FrameSaver::save";
+        // qDebug() << "FrameSaver::save";
     }
 
 //     QString fileName(QDateTime::currentDateTime().toString("yyyy.MM.dd.HH.mm.ss.zzz.png"));
@@ -88,13 +91,23 @@ void FrameSaver::socketError(QLocalSocket::LocalSocketError error)
 
 void FrameSaver::socketConnected()
 {
-    GeometryMessage gm(m_appUid, m_view->geometry());
-    gm.write(m_socket);
+    qDebug() << "FrameSaver::socketConnected";
 }
 
 void FrameSaver::socketDisconnected()
 {
     qDebug() << "FrameSaver::socketDisconnected";
     m_shared->detach();
+}
+
+void FrameSaver::socketBytesWritten(qint64 bytes)
+{
+    qDebug() << "FrameSaver::socketBytesWritten - bytes:" << bytes;
+}
+
+void FrameSaver::viewSizeChanged()
+{
+    GeometryMessage gm(m_appUid, m_view->geometry());
+    gm.write(m_socket);
 }
 

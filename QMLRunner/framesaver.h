@@ -15,6 +15,8 @@ public slots:
     void socketError(QLocalSocket::LocalSocketError error);
     void socketConnected();
     void socketDisconnected();
+    void socketBytesWritten(qint64 bytes);
+    void viewSizeChanged();
 
 private:
     QString m_appUid;

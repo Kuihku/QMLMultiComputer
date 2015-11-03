@@ -25,6 +25,7 @@ QRect LocalConnection::geometry() const
 
 void LocalConnection::paintImage(QPainter* painter)
 {
+    qDebug() << "LocalConnection::paintImage - m_geometry:" << m_geometry;
     painter->drawImage(m_geometry, m_image);
 }
 
@@ -42,7 +43,7 @@ void LocalConnection::socketReadyRead()
             case MessageType::Undefined : qWarning("LocalConnection::socketReadyRead - message type: Undefined"); break;
             case MessageType::Update : UpdateView(m->appUid()); break;
             case MessageType::Geometry : {
-                qDebug() << "LocalConnection::socketReadyRead - message: Update";
+                qDebug() << "LocalConnection::socketReadyRead - message: Geometry";
                 GeometryMessage* gm(dynamic_cast<GeometryMessage*>(m));
                 setGeometry(gm->appUid(), gm->geometry());
                 break;
@@ -63,6 +64,7 @@ void LocalConnection::socketError(QLocalSocket::LocalSocketError error)
 
 void LocalConnection::UpdateView(QString appUid)
 {
+    qDebug() << "LocalConnection::UpdateView - appUid:" << appUid;
     if (!m_shared) {
         m_shared = new QSharedMemory(appUid, this);
     }
