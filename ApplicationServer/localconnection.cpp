@@ -35,6 +35,7 @@ void LocalConnection::socketAboutToClose()
 
 void LocalConnection::socketReadyRead()
 {
+    qDebug() << "LocalConnection::socketReadyRead - bytes available:" << m_socket->bytesAvailable();
     Message* m(Message::read(m_socket));
     if (m) {
         switch (m->type()) {

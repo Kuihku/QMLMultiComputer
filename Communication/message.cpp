@@ -49,8 +49,12 @@ Message* Message::read(QIODevice* socket)
         QString appUid;
         ds >> dataSize;
         qint64 bytesAvailable(socket->bytesAvailable());
-        if (bytesAvailable < dataSize) return msg;
+        if (bytesAvailable < dataSize) {
+            qWarning() << "Message::read - bytesAvailable:" << bytesAvailable << "<" << "dataSize:" << dataSize;
+            return msg;
+        }
         ds >> messageType >> appUid;
+        qDebug() << "Message::read - messageType:" << messageType << "- appUid:" << appUid;
         switch (messageType) {
         case Update : {
             if (bytesAvailable > 0) {
@@ -137,7 +141,7 @@ UpdateMessage::UpdateMessage(QString appUid, QDataStream &ds) :
 }
 
 UpdateMessage::UpdateMessage(const UpdateMessage& other) :
-    Message(other.m_appUid, Update)
+    Message(other.m_appUid, other.m_messageType)
 {
 }
 

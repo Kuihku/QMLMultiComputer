@@ -70,7 +70,7 @@ void FrameSaver::save()
 
 //        QDataStream pingOut(m_socket);
 //        pingOut << (int)1;
-//        qDebug() << "FrameSaver::save";
+        qDebug() << "FrameSaver::save";
     }
 
 //     QString fileName(QDateTime::currentDateTime().toString("yyyy.MM.dd.HH.mm.ss.zzz.png"));
@@ -94,6 +94,7 @@ void FrameSaver::socketConnected()
 
 void FrameSaver::socketDisconnected()
 {
-
+    qDebug() << "FrameSaver::socketDisconnected";
+    m_shared->detach();
 }
 
