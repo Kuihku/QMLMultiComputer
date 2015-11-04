@@ -7,6 +7,8 @@
 
 #include <QDebug>
 
+#include <QDateTime>
+
 LocalConnection::LocalConnection(QLocalSocket* socket, QObject* parent) :
     QObject(parent),
     m_socket(socket),
@@ -25,8 +27,16 @@ QRect LocalConnection::geometry() const
 
 void LocalConnection::paintImage(QPainter* painter)
 {
-    qDebug() << "LocalConnection::paintImage - m_geometry:" << m_geometry;
-    painter->drawImage(m_geometry, m_image);
+    qDebug() << "LocalConnection::paintImage - m_geometry:" << m_geometry << "- image size:" << m_image.size();
+    painter->drawImage(m_geometry.topLeft(), m_image);
+
+//    QString fileName(QDateTime::currentDateTime().toString("yyyy.MM.dd.HH.mm.ss.zzz.png"));
+//    fileName.prepend("images/");
+//    qDebug() << "FrameSaver::save - fileName:" << fileName.toLatin1().constData();
+//    if (!m_image.save(fileName, "PNG")) {
+//        qDebug() << "FrameSaver::save - Error, fileName:" << fileName.toLatin1().constData();
+//    }
+
 }
 
 void LocalConnection::socketAboutToClose()

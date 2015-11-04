@@ -36,14 +36,13 @@ Server::~Server()
 
 void Server::paintWindows(QRect rect, QRegion region, QPainter* painter)
 {
-//    qDebug() << "Server::paintWindows - rect:" << rect << "- region:" << region;
+    qDebug() << "Server::paintWindows - rect:" << rect << "- region:" << region;
 //    qDebug("Server::paintWindows - painter: %p", painter);
 //    Q_UNUSED(rect)
     int connectionCount(m_localConnections.count());
     for (int i(0); i < connectionCount; i++) {
         LocalConnection* localConnection(m_localConnections.at(i));
         if (region.contains(localConnection->geometry())) {
-            qDebug() << "Server::paintWindows";
             localConnection->paintImage(painter);
         }
     }
@@ -64,8 +63,8 @@ void Server::newLocalConnection()
 void Server::localUpdate()
 {
     LocalConnection* localConnection(qobject_cast<LocalConnection*>(sender()));
-    qDebug("Server::localUpdate - localConnection: %p", localConnection);
     if (localConnection) {
+        qDebug() << "Server::localUpdate - local geometry:" << localConnection->geometry();
         m_view->update(localConnection->geometry());
     }
 //    m_view->update();

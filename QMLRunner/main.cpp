@@ -1,15 +1,12 @@
+#include <QObject>
 #include <QApplication>
-#include <QUrl>
-#include <QQuickView>
-#include <QQmlEngine>
-#include <QWindow>
-#include <QMainWindow>
+
 #include <QStringList>
 #include <QDir>
 
 #include <QDebug>
 
-#include "framesaver.h"
+#include "mainwindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -30,13 +27,14 @@ int main(int argc, char *argv[])
 
         if (!QDir::setCurrent(qmlPath)) return -2;
 
-        QMainWindow mainWindow;
-
+        MainWindow mainWindow(appUid, mainQML, server);
+/*
         mainWindow.setAttribute(Qt::WA_DontShowOnScreen);
 
         QQuickView quickView;
 
         FrameSaver saver(appUid, server, &quickView);
+        QObject::connect(&mainWindow, SIGNAL(geometryChanged(const QRect&)), &saver, SLOT(geometryChanged(const QRect&)));
 
         QObject::connect(quickView.engine(), SIGNAL(quit()), &app, SLOT(quit()));
 
@@ -53,7 +51,7 @@ int main(int argc, char *argv[])
         container->setParent(&mainWindow);
 
         quickView.show();
-
+*/
         mainWindow.show();
 
         int returnValue(app.exec());

@@ -11,10 +11,9 @@
 
 #include <QDebug>
 
-FrameSaver::FrameSaver(QString appUid, QString server, QQuickView* view, QObject *parent) :
+FrameSaver::FrameSaver(QString appUid, QString server, QObject *parent) :
     QObject(parent),
     m_appUid(appUid),
-    m_view(view),
     m_socket(new QLocalSocket(this)),
     m_shared(new QSharedMemory(appUid, this))
 {
@@ -23,7 +22,8 @@ FrameSaver::FrameSaver(QString appUid, QString server, QQuickView* view, QObject
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(socketError(QLocalSocket::LocalSocketError)));
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
-    connect(m_socket, SIGNAL(bytesWritten(qint64)), this, SLOT(socketBytesWritten(qint64)));
+//    connect(m_socket, SIGNAL(bytesWritten(qint64)), this, SLOT(socketBytesWritten(qint64)));
+
     m_socket->connectToServer(server);
     connect(view, SIGNAL(frameSwapped()), this, SLOT(save()));
     connect(view, SIGNAL(widthChanged(int)), this, SLOT(viewGeometryChanged()));
@@ -109,6 +109,18 @@ void FrameSaver::socketBytesWritten(qint64 bytes)
 
 void FrameSaver::viewGeometryChanged()
 {
-    GeometryMessage gm(m_appUid, m_view->geometry());
+    QRect newGeometry(m_view->geometry());
+    if (m_geometry != newGeometry) {
+        m_geometry = newGeometry;
+        qDebug() << "FrameSaver::viewGeometryChanged - geometry:" << m_geometry;
+//        GeometryMessage gm(m_appUid, m_geometry);
+//        gm.write(m_socket);
+    }
+}
+
+void FrameSaver::geometryChanged(const QRect& geometry)
+{
+    qDebug() << "FrameSaver::geometryChanged - geometry:" << geometry;
+    GeometryMessage gm(m_appUid, geometry);
     gm.write(m_socket);
 }

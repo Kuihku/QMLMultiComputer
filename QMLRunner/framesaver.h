@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QLocalSocket>
+#include <QRect>
 
 class FrameSaver : public QObject
 {
@@ -17,6 +18,8 @@ public slots:
     void socketDisconnected();
     void socketBytesWritten(qint64 bytes);
     void viewGeometryChanged();
+
+    void geometryChanged(const QRect& geometry);
 
 private:
     QString m_appUid;

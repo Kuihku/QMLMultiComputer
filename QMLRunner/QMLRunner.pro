@@ -8,10 +8,10 @@ CONFIG += c++11
 
 SOURCES += \
     main.cpp \
-    framesaver.cpp
+    mainwindow.cpp
 
 HEADERS += \
-    framesaver.h
+    mainwindow.h
 
 DISTFILES += \
     QML/main.qml
