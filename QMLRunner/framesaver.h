@@ -16,7 +16,7 @@ public slots:
     void socketConnected();
     void socketDisconnected();
     void socketBytesWritten(qint64 bytes);
-    void viewSizeChanged();
+    void viewGeometryChanged();
 
 private:
     QString m_appUid;

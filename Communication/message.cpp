@@ -58,7 +58,7 @@ Message* Message::read(QIODevice* socket)
         switch (messageType) {
         case MessageType::Update : {
             if (bytesAvailable > 0) {
-                msg = new UpdateMessage(appUid, ds);
+                msg = new Message(appUid, MessageType::Update);
             }
             break;
         }
@@ -125,31 +125,6 @@ QDebug operator<<(QDebug d, const Message& m)
 {
     return d << QString("Message(appId: %1, type: %2)").arg(m.appUid()).arg(MSGTYPETOSTRING(m.type())).toLocal8Bit().data();
 }
-
-
-// UpdateMessage
-
-UpdateMessage::UpdateMessage(QString appUid) :
-    Message(appUid, MessageType::Update)
-{
-}
-
-UpdateMessage::UpdateMessage(QString appUid, QDataStream &ds) :
-    Message(appUid, MessageType::Update)
-{
-    Q_UNUSED(ds)
-}
-
-UpdateMessage::UpdateMessage(const UpdateMessage& other) :
-    Message(other.m_appUid, other.m_messageType)
-{
-}
-
-QDebug operator<<(QDebug d, const UpdateMessage& m)
-{
-    return d << QString("UpdateMessage(appId: %1, type: %2)").arg(m.appUid()).arg(MSGTYPETOSTRING(m.type())).toLocal8Bit().data();
-}
-
 
 // LaunchMessage
 

@@ -51,25 +51,6 @@ protected:
 
 COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const Message& m);
 
-class COMMUNICATIONSHARED_EXPORT UpdateMessage : public Message
-{
-
-public:
-    UpdateMessage(QString appUid = QString());
-
-protected:
-    UpdateMessage(QString appUid, QDataStream& ds);
-
-private:
-    UpdateMessage(const UpdateMessage& other);
-
-protected:
-    friend class Message;
-
-};
-
-COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const UpdateMessage& lm);
-
 class COMMUNICATIONSHARED_EXPORT LaunchMessage : public Message
 {
 

@@ -2,6 +2,7 @@ import QtQuick 2.5
 // import QtQuick.Window 2.2
 
 Rectangle {
+    id: mainQML;
     width: 200;
     height: 200;
     visible: true
@@ -36,6 +37,8 @@ Rectangle {
         property int counter: 0;
         triggeredOnStart: true;
         onTriggered: {
+            mainQML.width += 10;
+            mainQML.height += 10;
 //            console.debug("QML Timer counter: " + timer.counter);
             if (timer.counter++ >= 10) {
                 timer.counter = 0;
