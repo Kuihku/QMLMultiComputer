@@ -26,7 +26,6 @@ MainWindow::MainWindow(QString appUid, QString mainQML, QString server, QWidget*
     m_container(NULL),
     m_shared(new QSharedMemory(appUid, this))
 {
-    m_quickView->setPosition(100, 100);
     m_quickView->setResizeMode(QQuickView::SizeViewToRootObject);
     setAttribute(Qt::WA_DontShowOnScreen);
     connect(m_socket, SIGNAL(connected()), this, SLOT(socketConnected()));
@@ -45,9 +44,9 @@ MainWindow::MainWindow(QString appUid, QString mainQML, QString server, QWidget*
     m_quickView->setSource(QUrl::fromLocalFile(mainQML));
     // qDebug("quickView size:( %d, %d )", m_quickView->width(), m_quickView->height());
 
-    m_quickView->setPosition(0, 0);
-    m_container->move(0, 0);
-    move(0, 0);
+    m_quickView->setPosition(100, 100);
+    m_container->move(100, 100);
+    move(100, 100);
     connect(m_quickView, SIGNAL(widthChanged(int)), this, SLOT(viewGeometryChanged()));
     connect(m_quickView, SIGNAL(heightChanged(int)), this, SLOT(viewGeometryChanged()));
     connect(m_quickView, SIGNAL(xChanged(int)), this, SLOT(viewGeometryChanged()));
@@ -105,7 +104,6 @@ void MainWindow::resizeEvent(QResizeEvent*)
 
 void MainWindow::viewGeometryChanged()
 {
-    m_quickView->hide();
     QSize quickViewSize(m_quickView->size());
     QPoint quickViewPos(m_quickView->position());
 
@@ -115,8 +113,6 @@ void MainWindow::viewGeometryChanged()
     resize(quickViewSize);
     m_container->move(quickViewPos);
     move(quickViewPos);
-
-    m_quickView->show();
 
     if (m_socket->isWritable()) {
         QRect newGeometry(m_quickView->geometry());
