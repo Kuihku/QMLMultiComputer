@@ -13,6 +13,7 @@
     QString(type == MessageType::Undefined ? "Undefined" : \
     type == MessageType::Update ? "Update" : \
     type == MessageType::Launch ? "Launch" : \
+    type == MessageType::RemoteDirection ? "RemoteDirection" : \
     type == MessageType::Move ? "Move" : \
     type == MessageType::Size ? "Size" : \
     type == MessageType::Close ? "Close" : "Type unknown")
@@ -83,6 +84,12 @@ Message* Message::read(QIODevice* socket)
         case MessageType::Geometry : {
             if (bytesAvailable >= (qint64)(4 * sizeof(qint32))) {
                 msg = new GeometryMessage(appUid, ds);
+            }
+            break;
+        }
+        case MessageType::RemoteDirection : {
+            if (bytesAvailable >= (qint64)(sizeof(qint32))) {
+                msg = new RemoteDirectionMessage(appUid, ds);
             }
             break;
         }
@@ -398,6 +405,48 @@ GeometryMessage::GeometryMessage(const GeometryMessage &other) :
 QDebug operator<<(QDebug d, const GeometryMessage& gm)
 {
     return d << QString("GeometryMessage(appId: %1, geometry:(%2, %3, %4, %5))").arg(gm.appUid()).arg(gm.x()).arg(gm.y()).arg(gm.width()).arg(gm.height()).toLocal8Bit().data();
+}
+
+
+// RemoteDirectionMessage
+
+RemoteDirectionMessage::RemoteDirectionMessage(QString appUid, int remoteDirection) :
+    Message(appUid, MessageType::RemoteDirection),
+    m_remoteDirection(remoteDirection)
+{
+}
+
+RemoteDirectionMessage::RemoteDirectionMessage(QString appUid, QDataStream& ds) :
+    Message(appUid, MessageType::RemoteDirection)
+{
+    ds >> m_remoteDirection;
+}
+
+RemoteDirectionMessage::RemoteDirectionMessage(const RemoteDirectionMessage& other) :
+    Message(other.m_appUid, other.m_messageType),
+    m_remoteDirection(other.m_remoteDirection)
+{
+}
+
+void RemoteDirectionMessage::writeData(QDataStream& ds)
+{
+    ds << m_remoteDirection;
+}
+
+int RemoteDirectionMessage::remoteDirection() const
+{
+    return m_remoteDirection;
+}
+
+void RemoteDirectionMessage::setRemoteDirection(int remoteDirection)
+{
+    m_remoteDirection = remoteDirection;
+}
+
+
+QDebug operator<<(QDebug d, const RemoteDirectionMessage& rdm)
+{
+    return d << QString("RemoteDirectionMessage(appId: %1, RemoteDirection: %2)").arg(rdm.appUid()).arg(rdm.remoteDirection()).toLocal8Bit().data();
 }
 
 // EOF

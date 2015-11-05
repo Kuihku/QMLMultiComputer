@@ -2,10 +2,12 @@
 #define SERVER_H
 
 #include <QObject>
+#include <QHostAddress>
 #include <QList>
 #include <QMap>
 
 #include "windowholder.h"
+#include "remoteconnectioninfo.h"
 
 class Server : public QObject, public WindowHolder
 {
@@ -18,35 +20,27 @@ protected: // from class WindowHolder
     virtual void paintWindows(QRect rect, QRegion region, class QPainter* painter);
 
 protected slots:
+    void newRemoteConnection();
+    void remoteConnectionReady();
     void newLocalConnection();
     void localUpdate();
     void localConnectionClosed();
 
 private:
+    QHostAddress myIPv4();
     void parseConfigFile();
 
 signals:
 
 public slots:
 
-private:
-    enum RemoteDirection {
-        NorthWest = 1,
-        North,
-        NorthEast,
-        West,
-        East,
-        SouthWest,
-        South,
-        SouthEast
-    };
-
 private: // data
     class MainView* m_view;
     class QLocalServer* m_localServer;
-    class QTcpServer* m_tcpServer;
+    class QTcpServer* m_remoteServer;
     QList<class LocalConnection*> m_localConnections;
-    QMap<RemoteDirection, class RemoteConnection*> m_remoteConnections;
+    QMap<Remote::Direction, class RemoteConnection*> m_remoteConnections;
+    QList<class RemoteConnection*> m_unconnectedRemoteConnections;
 
 };
 

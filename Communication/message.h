@@ -12,11 +12,13 @@ namespace MessageType {
     enum {
         Undefined = 0,
         Update = 1,
-        Launch,
         Move,
         Size,
         Close,
-        Geometry
+        Geometry,
+
+        RemoteDirection = 0x100,
+        Launch
     };
 }
 
@@ -176,5 +178,29 @@ protected:
 };
 
 COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const GeometryMessage& gm);
+
+class COMMUNICATIONSHARED_EXPORT RemoteDirectionMessage : public Message
+{
+
+public:
+    RemoteDirectionMessage(QString appUid = QString(), int remoteDirection = 0);
+    int remoteDirection() const;
+    void setRemoteDirection(int remoteDirection);
+
+protected:
+    RemoteDirectionMessage(QString appUid, QDataStream& ds);
+    virtual void writeData(QDataStream& ds);
+
+private:
+    RemoteDirectionMessage(const RemoteDirectionMessage& other);
+
+protected:
+    qint32 m_remoteDirection;
+
+    friend class Message;
+};
+
+COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const RemoteDirectionMessage& sm);
+
 
 #endif // MESSAGE_H

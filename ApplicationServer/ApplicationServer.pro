@@ -18,7 +18,8 @@ HEADERS += \
     localconnection.h \
     remoteconnection.h \
     mainview.h \
-    windowholder.h
+    windowholder.h \
+    remoteconnectioninfo.h
 
 
 DEFINES += SERVER_CONFIG=\\\"$$PWD/server_config.txt\\\"
