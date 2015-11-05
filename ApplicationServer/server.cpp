@@ -99,12 +99,12 @@ void Server::newLocalConnection()
 
 void Server::localUpdate()
 {
-//    LocalConnection* localConnection(qobject_cast<LocalConnection*>(sender()));
-//    qDebug("Server::localUpdate - localConnection: %p", localConnection);
-//    if (localConnection) {
-//        m_view->update(localConnection->geometry());
-//    }
-    m_view->update();
+    LocalConnection* localConnection(qobject_cast<LocalConnection*>(sender()));
+    qDebug("Server::localUpdate - localConnection: %p", localConnection);
+    if (localConnection) {
+        m_view->update(localConnection->geometry());
+    }
+//    m_view->update();
 }
 
 void Server::localConnectionClosed()

@@ -26,8 +26,10 @@ FrameSaver::FrameSaver(QString appUid, QString server, QQuickView* view, QObject
     connect(m_socket, SIGNAL(bytesWritten(qint64)), this, SLOT(socketBytesWritten(qint64)));
     m_socket->connectToServer(server);
     connect(view, SIGNAL(frameSwapped()), this, SLOT(save()));
-    connect(view, SIGNAL(widthChanged(int)), this, SLOT(viewSizeChanged()));
-    connect(view, SIGNAL(heightChanged(int)), this, SLOT(viewSizeChanged()));
+    connect(view, SIGNAL(widthChanged(int)), this, SLOT(viewGeometryChanged()));
+    connect(view, SIGNAL(heightChanged(int)), this, SLOT(viewGeometryChanged()));
+    connect(view, SIGNAL(xChanged(int)), this, SLOT(viewGeometryChanged()));
+    connect(view, SIGNAL(yChanged(int)), this, SLOT(viewGeometryChanged()));
     qDebug() << "FrameSaver::FrameSaver - END";
 }
 
@@ -68,8 +70,8 @@ void FrameSaver::save()
 //        QPainter p(&image);
 //        p.drawText(10, 20, QString::number(realSize));
 
-        UpdateMessage updateMessage(m_appUid);
-        updateMessage.write(m_socket);
+        Message message(m_appUid, MessageType::Update);
+        message.write(m_socket);
 
 //        QDataStream pingOut(m_socket);
 //        pingOut << (int)1;
@@ -105,9 +107,8 @@ void FrameSaver::socketBytesWritten(qint64 bytes)
     qDebug() << "FrameSaver::socketBytesWritten - bytes:" << bytes;
 }
 
-void FrameSaver::viewSizeChanged()
+void FrameSaver::viewGeometryChanged()
 {
     GeometryMessage gm(m_appUid, m_view->geometry());
     gm.write(m_socket);
 }
-

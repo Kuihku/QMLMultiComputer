@@ -93,6 +93,9 @@ void LocalConnection::UpdateView(QString appUid)
 void LocalConnection::setGeometry(QString appUid, QRect geometry)
 {
     Q_UNUSED(appUid)
-    m_geometry = geometry;
-    emit updateRequest();
+    if (m_geometry != geometry) {
+        qDebug() << "LocalConnection::setGeometry - geometry:" << geometry;
+        m_geometry = geometry;
+        emit updateRequest();
+    }
 }
