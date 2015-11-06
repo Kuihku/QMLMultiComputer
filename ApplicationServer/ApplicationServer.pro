@@ -11,7 +11,8 @@ SOURCES += \
     server.cpp \
     localconnection.cpp \
     remoteconnection.cpp \
-    mainview.cpp
+    mainview.cpp \
+    remoteapplication.cpp
 
 HEADERS += \
     server.h \
@@ -19,7 +20,8 @@ HEADERS += \
     remoteconnection.h \
     mainview.h \
     windowholder.h \
-    remoteconnectioninfo.h
+    remoteconnectioninfo.h \
+    remoteapplication.h
 
 
 DEFINES += SERVER_CONFIG=\\\"$$PWD/server_config.txt\\\"

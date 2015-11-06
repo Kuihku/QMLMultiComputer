@@ -6,13 +6,16 @@
 #include <QImage>
 #include <QRect>
 
+#include "remoteconnectioninfo.h"
+
 class LocalConnection : public QObject
 {
     Q_OBJECT
 public:
     explicit LocalConnection(QLocalSocket* socket, QObject *parent = 0);
     QRect geometry() const;
-    void paintImage(class QPainter* painter);
+    QMap<Remote::Direction, QImage> paintImage(class QPainter* painter);
+    QString appUid() const;
 
 protected slots:
     void socketAboutToClose();
@@ -25,11 +28,13 @@ private:
 
 signals:
     void updateRequest();
+    void geometryChanged(QString, QRect);
     void connectionClosed();
 
 public slots:
 
 private: // data
+    QString m_appUid;
     QLocalSocket* m_socket;
     class QSharedMemory* m_shared;
     QImage m_image;

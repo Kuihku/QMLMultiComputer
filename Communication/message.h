@@ -18,7 +18,9 @@ namespace MessageType {
         Geometry,
 
         RemoteDirection = 0x100,
-        Launch
+        RemoteLaunch,
+        RemoteView,
+        RemoteGeometry
     };
 }
 
@@ -53,20 +55,20 @@ protected:
 
 COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const Message& m);
 
-class COMMUNICATIONSHARED_EXPORT LaunchMessage : public Message
+class COMMUNICATIONSHARED_EXPORT RemoteLaunchMessage : public Message
 {
 
 public:
-    LaunchMessage(QString appUid = QString(), const QString& data = QString());
+    RemoteLaunchMessage(QString appUid = QString(), const QString& data = QString());
     QString data() const;
     void setData(QString data);
 
 protected:
-    LaunchMessage(QString appUid, QDataStream& ds);
+    RemoteLaunchMessage(QString appUid, QDataStream& ds);
     virtual void writeData(QDataStream& ds);
 
 private:
-    LaunchMessage(const LaunchMessage& other);
+    RemoteLaunchMessage(const RemoteLaunchMessage& other);
 
 protected:
     QString m_data;
@@ -74,7 +76,7 @@ protected:
     friend class Message;
 };
 
-COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const LaunchMessage& lm);
+COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const RemoteLaunchMessage& lm);
 
 class COMMUNICATIONSHARED_EXPORT MoveMessage : public Message
 {
@@ -182,6 +184,30 @@ protected:
 };
 
 COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const RemoteDirectionMessage& sm);
+
+class COMMUNICATIONSHARED_EXPORT RemoteGeometryMessage : public GeometryMessage
+{
+
+public:
+    RemoteGeometryMessage(QString appUid = QString(), quint32 port = 0, int x = 0, int y = 0, int width = 0, int height = 0);
+    RemoteGeometryMessage(QString appUid, quint32 port, QRect geometry);
+    quint32 port() const;
+    void setPort(quint32 port);
+
+protected:
+    RemoteGeometryMessage(QString appUid, QDataStream& ds);
+    virtual void writeData(QDataStream& ds);
+
+private:
+    RemoteGeometryMessage(const RemoteGeometryMessage& other);
+
+protected:
+    int m_port;
+
+    friend class Message;
+};
+
+COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const RemoteGeometryMessage& gm);
 
 
 #endif // MESSAGE_H

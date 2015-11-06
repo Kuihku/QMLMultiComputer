@@ -1,16 +1,20 @@
 #include "remoteconnection.h"
 #include "remoteconnectioninfo.h"
+#include "remoteapplication.h"
 #include "message.h"
 
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <QMetaObject>
+#include <QUdpSocket>
 
 #include <QDebug>
 
 
-RemoteConnection::RemoteConnection(Remote::Direction remoteDirection, QByteArray ip, QObject *parent) :
+RemoteConnection::RemoteConnection(QHostAddress myIPv4, Remote::Direction remoteDirection, QByteArray ip, QObject *parent) :
     QObject(parent),
+    m_nextUdpPort(49152),
+    m_myIPv4(myIPv4),
     m_remoteDirection(remoteDirection),
     m_remoteSocket(new QTcpSocket(this)),
     m_ip(0)
@@ -30,8 +34,10 @@ RemoteConnection::RemoteConnection(Remote::Direction remoteDirection, QByteArray
     }
 }
 
-RemoteConnection::RemoteConnection(QTcpSocket* socket, QObject *parent) :
+RemoteConnection::RemoteConnection(QHostAddress myIPv4, QTcpSocket* socket, QObject *parent) :
     QObject(parent),
+    m_nextUdpPort(49152),
+    m_myIPv4(myIPv4),
     m_remoteDirection(Remote::Undefined),
     m_remoteSocket(socket),
     m_ip(socket->peerAddress().toIPv4Address())
@@ -41,6 +47,30 @@ RemoteConnection::RemoteConnection(QTcpSocket* socket, QObject *parent) :
 Remote::Direction RemoteConnection::remoteDirection() const
 {
     return m_remoteDirection;
+}
+
+void RemoteConnection::updateGeometry(QString appUid, int x, int y, int width, int height)
+{
+    RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
+    if (!remoteApplication) {
+        remoteApplication = new RemoteApplication(m_myIPv4, m_nextUdpPort++, this);
+        if (m_nextUdpPort > 65534) {
+            m_nextUdpPort = 49153;
+        }
+        m_remoteApplications.insert(appUid, remoteApplication);
+    }
+    if (m_remoteSocket->isWritable()) {
+        RemoteGeometryMessage gm(appUid, remoteApplication->port(), x, y, width, height);
+        gm.write(m_remoteSocket);
+    }
+}
+
+void RemoteConnection::sendImage(QString appUid, const QImage& image)
+{
+    RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
+    if (remoteApplication) {
+        remoteApplication->sendImage(image);
+    }
 }
 
 void RemoteConnection::socketConnected()
@@ -66,6 +96,11 @@ void RemoteConnection::readSocket()
                 RemoteDirectionMessage* rdm(dynamic_cast<RemoteDirectionMessage*>(m));
                 handleRemoteDirection((Remote::Direction)rdm->remoteDirection());
                 break;
+            }
+            case MessageType::RemoteGeometry: {
+                RemoteGeometryMessage* gm(dynamic_cast<RemoteGeometryMessage*>(m));
+                handleGeometryUpdate(gm->appUid(), gm->port(), gm->geometry());
+            break;
             }
             default : {
                 qDebug() << "LocalConnection::socketReadyRead - message:" << *m;
@@ -103,4 +138,14 @@ void RemoteConnection::handleRemoteDirection(Remote::Direction remoteDicrection)
         m_remoteDirection = Remote::NorthWest;
     }
     emit connectionReady();
+}
+
+void RemoteConnection::handleGeometryUpdate(QString appUid, quint16 port, QRect rect)
+{
+    RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
+    if (!remoteApplication) {
+        remoteApplication = new RemoteApplication(m_myIPv4, port, this);
+        m_remoteApplications.insert(appUid, remoteApplication);
+    }
+    remoteApplication->updateGeometry(rect);
 }

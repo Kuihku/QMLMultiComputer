@@ -22,10 +22,10 @@ Server::Server(QObject *parent) :
     m_localServer(new QLocalServer(this)),
     m_remoteServer(new QTcpServer(this))
 {
-    QHostAddress myIP(myIPv4());
-    if (!myIP.isNull()) {
+    m_myIPv4 = myIPv4();
+    if (!m_myIPv4.isNull()) {
         connect(m_remoteServer, SIGNAL(newConnection()), this, SLOT(newRemoteConnection()));
-        if (!m_remoteServer->listen(myIP, REMOTE_PORT)) {
+        if (!m_remoteServer->listen(m_myIPv4, REMOTE_PORT)) {
             qWarning() << "Server::Server - m_remoteServer listen error:" << m_remoteServer->errorString();
         }
     }
@@ -49,7 +49,7 @@ void Server::paintWindows(QRect rect, QRegion region, QPainter* painter)
 {
 //    qDebug() << "Server::paintWindows - rect:" << rect << "- region:" << region;
 //    qDebug("Server::paintWindows - painter: %p", painter);
-//    Q_UNUSED(rect)
+    Q_UNUSED(rect)
 
 
     int connectionCount(m_localConnections.count());
@@ -57,7 +57,18 @@ void Server::paintWindows(QRect rect, QRegion region, QPainter* painter)
         LocalConnection* localConnection(m_localConnections.at(i));
         if (region.contains(localConnection->geometry())) {
 //            qDebug() << "Server::paintWindows";
-            localConnection->paintImage(painter);
+            QMap<Remote::Direction, QImage> externalImages(localConnection->paintImage(painter));
+            if (!externalImages.isEmpty()) {
+                QString appUid(localConnection->appUid());
+                QMapIterator<Remote::Direction, QImage> extImgIterator(externalImages);
+                while (extImgIterator.hasNext()) {
+                    extImgIterator.next();
+                    RemoteConnection* remoteConnection(m_remoteConnections.value(extImgIterator.key(), NULL));
+                    if (remoteConnection) {
+                        remoteConnection->sendImage(appUid, extImgIterator.value());
+                    }
+                }
+            }
         }
     }
 }
@@ -67,7 +78,7 @@ void Server::newRemoteConnection()
     qDebug("Server::newLocalConnection");
     while (m_remoteServer->hasPendingConnections()) {
         QTcpSocket* socket(m_remoteServer->nextPendingConnection());
-        RemoteConnection* remoteConnection(new RemoteConnection(socket, this));
+        RemoteConnection* remoteConnection(new RemoteConnection(m_myIPv4, socket, this));
         m_unconnectedRemoteConnections.append(remoteConnection);
         connect(remoteConnection, SIGNAL(connectionReady()), this, SLOT(remoteConnectionReady()));
         connect(remoteConnection, SIGNAL(connectionClosed()), this, SLOT(remoteConnectionClosed()));
@@ -93,6 +104,7 @@ void Server::newLocalConnection()
         LocalConnection* localConnection(new LocalConnection(socket, this));
         m_localConnections.append(localConnection);
         connect(localConnection, SIGNAL(updateRequest()), this, SLOT(localUpdate()));
+        connect(localConnection, SIGNAL(geometryChanged(QString QRect)), this, SLOT(localGeometryChanged(QString, QRect)));
         connect(localConnection, SIGNAL(connectionClosed()), this, SLOT(localConnectionClosed()));
     }
 }
@@ -104,7 +116,51 @@ void Server::localUpdate()
     if (localConnection) {
         m_view->update(localConnection->geometry());
     }
-//    m_view->update();
+    //    m_view->update();
+}
+
+void Server::localGeometryChanged(QString appUid, QRect geometry)
+{
+    QRect viewPort(m_view->rect());
+
+    // check right edge
+    bool rightEdge(false);
+    if ((geometry.x() + geometry.width()) > (viewPort.x() + viewPort.width())) {
+        rightEdge = true;
+
+        RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::East, NULL));
+        if (remoteConnection) {
+            remoteConnection->updateGeometry(appUid,
+                                             0,
+                                             geometry.y(),
+                                             (geometry.x() - viewPort.x()),
+                                             (viewPort.height() - geometry.y() + viewPort.y()));
+        }
+    }
+
+    // check bottom edge
+    if ((geometry.y() + geometry.height()) > (viewPort.y() + viewPort.height())) {
+        RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::South, NULL));
+        if (remoteConnection) {
+            remoteConnection->updateGeometry(appUid,
+                                             geometry.x(),
+                                             0,
+                                             (viewPort.width() - geometry.x() + viewPort.x()),
+                                             (geometry.y() - viewPort.y()));
+        }
+
+        if(rightEdge) {
+            // check bottomright edge
+            RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::SouthEast, NULL));
+            if (remoteConnection) {
+                remoteConnection->updateGeometry(appUid,
+                                                 0,
+                                                 0,
+                                                 (geometry.x() - viewPort.x()),
+                                                 (geometry.y() - viewPort.y()));
+            }
+        }
+    }
 }
 
 void Server::localConnectionClosed()
@@ -152,28 +208,28 @@ void Server::parseConfigFile()
         QByteArray ip(line.mid(doubleColonIndex + 1));
 
         if (qstricmp(direction, "northwest")) {
-            m_remoteConnections.insert(Remote::NorthWest, new RemoteConnection(Remote::NorthWest, ip, this));
+            m_remoteConnections.insert(Remote::NorthWest, new RemoteConnection(m_myIPv4, Remote::NorthWest, ip, this));
         }
         else if (qstricmp(direction, "north")) {
-            m_remoteConnections.insert(Remote::North, new RemoteConnection(Remote::North, ip, this));
+            m_remoteConnections.insert(Remote::North, new RemoteConnection(m_myIPv4, Remote::North, ip, this));
         }
         else if (qstricmp(direction, "northeast")) {
-            m_remoteConnections.insert(Remote::NorthEast, new RemoteConnection(Remote::NorthEast, ip, this));
+            m_remoteConnections.insert(Remote::NorthEast, new RemoteConnection(m_myIPv4, Remote::NorthEast, ip, this));
         }
         else if (qstricmp(direction, "west")) {
-            m_remoteConnections.insert(Remote::West, new RemoteConnection(Remote::West, ip, this));
+            m_remoteConnections.insert(Remote::West, new RemoteConnection(m_myIPv4, Remote::West, ip, this));
         }
         else if (qstricmp(direction, "east")) {
-            m_remoteConnections.insert(Remote::East, new RemoteConnection(Remote::East, ip, this));
+            m_remoteConnections.insert(Remote::East, new RemoteConnection(m_myIPv4, Remote::East, ip, this));
         }
         else if (qstricmp(direction, "southwest")) {
-            m_remoteConnections.insert(Remote::SouthWest, new RemoteConnection(Remote::SouthWest, ip, this));
+            m_remoteConnections.insert(Remote::SouthWest, new RemoteConnection(m_myIPv4, Remote::SouthWest, ip, this));
         }
         else if (qstricmp(direction, "south")) {
-            m_remoteConnections.insert(Remote::South, new RemoteConnection(Remote::South, ip, this));
+            m_remoteConnections.insert(Remote::South, new RemoteConnection(m_myIPv4, Remote::South, ip, this));
         }
         else if (qstricmp(direction, "southeast")) {
-            m_remoteConnections.insert(Remote::SouthEast, new RemoteConnection(Remote::SouthEast, ip, this));
+            m_remoteConnections.insert(Remote::SouthEast, new RemoteConnection(m_myIPv4, Remote::SouthEast, ip, this));
         }
     }
 

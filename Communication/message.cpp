@@ -12,8 +12,10 @@
 #define MSGTYPETOSTRING(type) \
     QString(type == MessageType::Undefined ? "Undefined" : \
     type == MessageType::Update ? "Update" : \
-    type == MessageType::Launch ? "Launch" : \
+    type == MessageType::RemoteLaunch ? "RemoteLaunch" : \
+    type == MessageType::RemoteView ? "RemoteView" : \
     type == MessageType::RemoteDirection ? "RemoteDirection" : \
+    type == MessageType::RemoteGeometry ? "RemoteGeometry" : \
     type == MessageType::Move ? "Move" : \
     type == MessageType::Size ? "Size" : \
     type == MessageType::Close ? "Close" : "Type unknown")
@@ -57,15 +59,15 @@ Message* Message::read(QIODevice* socket)
         ds >> messageType >> appUid;
         qDebug() << "Message::read - messageType:" << messageType << "- appUid:" << appUid;
         switch (messageType) {
-        case MessageType::Update : {
-            if (bytesAvailable > 0) {
-                msg = new Message(appUid, MessageType::Update);
-            }
+        case MessageType::Update : ;// fall through
+        case MessageType::RemoteView :
+        {
+            msg = new Message(appUid, messageType);
             break;
         }
-        case MessageType::Launch : {
+        case MessageType::RemoteLaunch : {
             if (bytesAvailable > 0) {
-                msg = new LaunchMessage(appUid, ds);
+                msg = new RemoteLaunchMessage(appUid, ds);
             }
             break;
         }
@@ -133,44 +135,44 @@ QDebug operator<<(QDebug d, const Message& m)
     return d << QString("Message(appId: %1, type: %2)").arg(m.appUid()).arg(MSGTYPETOSTRING(m.type())).toLocal8Bit().data();
 }
 
-// LaunchMessage
+// RemoteLaunchMessage
 
-LaunchMessage::LaunchMessage(QString appUid, const QString& data) :
-    Message(appUid, MessageType::Launch),
+RemoteLaunchMessage::RemoteLaunchMessage(QString appUid, const QString& data) :
+    Message(appUid, MessageType::RemoteLaunch),
     m_data(data)
 {
 }
 
-LaunchMessage::LaunchMessage(QString appUid, QDataStream& ds) :
-    Message(appUid, MessageType::Launch)
+RemoteLaunchMessage::RemoteLaunchMessage(QString appUid, QDataStream& ds) :
+    Message(appUid, MessageType::RemoteLaunch)
 {
     ds >> m_data;
 }
 
-LaunchMessage::LaunchMessage(const LaunchMessage& other) :
-    Message(other.m_appUid, MessageType::Launch),
+RemoteLaunchMessage::RemoteLaunchMessage(const RemoteLaunchMessage& other) :
+    Message(other.m_appUid, MessageType::RemoteLaunch),
     m_data(other.m_data)
 {
 }
 
-void LaunchMessage::writeData(QDataStream& ds)
+void RemoteLaunchMessage::writeData(QDataStream& ds)
 {
     ds << m_data;
 }
 
-QString LaunchMessage::data() const
+QString RemoteLaunchMessage::data() const
 {
     return m_data;
 }
 
-void LaunchMessage::setData(QString data)
+void RemoteLaunchMessage::setData(QString data)
 {
     m_data = data;
 }
 
-QDebug operator<<(QDebug d, const LaunchMessage& lm)
+QDebug operator<<(QDebug d, const RemoteLaunchMessage& lm)
 {
-    return d << QString("LaunchMessage(appId: %1, data: %2)").arg(lm.appUid()).arg(lm.data()).toLocal8Bit().data();
+    return d << QString("RemoteLaunchMessage(appId: %1, data: %2)").arg(lm.appUid()).arg(lm.data()).toLocal8Bit().data();
 }
 
 // MoveMessage
@@ -296,7 +298,6 @@ GeometryMessage::GeometryMessage(QString appUid, int x, int y, int width, int he
     Message(appUid, MessageType::Geometry),
     m_geometry(x, y, width, height)
 {
-
 }
 
 GeometryMessage::GeometryMessage(QString appUid, QRect geometry) :
@@ -418,10 +419,60 @@ void RemoteDirectionMessage::setRemoteDirection(int remoteDirection)
     m_remoteDirection = remoteDirection;
 }
 
-
 QDebug operator<<(QDebug d, const RemoteDirectionMessage& rdm)
 {
     return d << QString("RemoteDirectionMessage(appId: %1, RemoteDirection: %2)").arg(rdm.appUid()).arg(rdm.remoteDirection()).toLocal8Bit().data();
+}
+
+
+// RemoteGeometryMessage
+
+RemoteGeometryMessage::RemoteGeometryMessage(QString appUid, quint32 port, int x, int y, int width, int height) :
+    GeometryMessage(appUid, x, y, width, height),
+    m_port(port)
+{
+    m_messageType = MessageType::RemoteGeometry;
+}
+
+RemoteGeometryMessage::RemoteGeometryMessage(QString appUid, quint32 port, QRect geometry) :
+    GeometryMessage(appUid, geometry),
+    m_port(port)
+{
+    m_messageType = MessageType::RemoteGeometry;
+}
+
+quint32 RemoteGeometryMessage::port() const
+{
+    return m_port;
+}
+
+void RemoteGeometryMessage::setPort(quint32 port)
+{
+    m_port = port;
+}
+
+RemoteGeometryMessage::RemoteGeometryMessage(QString appUid, QDataStream &ds) :
+    GeometryMessage(appUid, ds)
+{
+    ds >> m_port;
+}
+
+void RemoteGeometryMessage::writeData(QDataStream &ds)
+{
+    GeometryMessage::writeData(ds);
+    ds << m_port;
+}
+
+RemoteGeometryMessage::RemoteGeometryMessage(const RemoteGeometryMessage &other) :
+    GeometryMessage(other.m_appUid, other.m_geometry),
+    m_port(other.m_port)
+{
+    m_messageType = MessageType::RemoteGeometry;
+}
+
+QDebug operator<<(QDebug d, const RemoteGeometryMessage& rgm)
+{
+    return d << QString("RemoteGeometryMessage(appId: %1, port: %2, geometry:(%3, %4, %5, %6))").arg(rgm.port()).arg(rgm.appUid()).arg(rgm.x()).arg(rgm.y()).arg(rgm.width()).arg(rgm.height()).toLocal8Bit().data();
 }
 
 // EOF

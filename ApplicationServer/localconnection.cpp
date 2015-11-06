@@ -23,10 +23,48 @@ QRect LocalConnection::geometry() const
     return m_geometry;
 }
 
-void LocalConnection::paintImage(QPainter* painter)
+QMap<Remote::Direction, QImage> LocalConnection::paintImage(QPainter* painter)
 {
     qDebug() << "LocalConnection::paintImage - m_geometry:" << m_geometry;
-    painter->drawImage(m_geometry, m_image);
+    QRect viewPort(painter->viewport());
+    QRect outRect(viewPort.intersected(m_geometry));
+    painter->drawImage(outRect, m_image.copy(outRect));
+    QMap<Remote::Direction, QImage> extImgs;
+    if (!viewPort.contains(m_geometry, true)) {
+        // check right edge
+        bool rightEdge(false);
+        if ((m_geometry.x() + m_geometry.width()) > (viewPort.x() + viewPort.width())) {
+            rightEdge = true;
+            extImgs.insert(Remote::East, m_image.copy((viewPort.width() + viewPort.x() - m_geometry.x()),
+                                                      0,
+                                                      (m_geometry.x() - viewPort.x()),
+                                                      (viewPort.height() - m_geometry.y() + viewPort.y())));
+        }
+
+
+        // check bottom edge
+        if ((m_geometry.y() + m_geometry.height()) > (viewPort.y() + viewPort.height())) {
+            extImgs.insert(Remote::South, m_image.copy(0,
+                                                      (viewPort.height() + viewPort.y() - m_geometry.y()),
+                                                      (viewPort.width() - m_geometry.x() + viewPort.x()),
+                                                      (m_geometry.y() - viewPort.y())));
+
+            if(rightEdge) {
+                // check bottomright edge
+                extImgs.insert(Remote::SouthEast, m_image.copy((viewPort.x() + viewPort.width() - m_geometry.x()),
+                                                               (viewPort.y() + viewPort.height() - m_geometry.y()),
+                                                               (m_geometry.x() - viewPort.x()),
+                                                               (m_geometry.y() - viewPort.y())));
+            }
+        }
+
+    }
+    return extImgs;
+}
+
+QString LocalConnection::appUid() const
+{
+    return m_appUid;
 }
 
 void LocalConnection::socketAboutToClose()
@@ -64,6 +102,7 @@ void LocalConnection::socketError(QLocalSocket::LocalSocketError error)
 
 void LocalConnection::UpdateView(QString appUid)
 {
+    m_appUid = appUid;
     qDebug() << "LocalConnection::UpdateView - appUid:" << appUid;
     if (!m_shared) {
         m_shared = new QSharedMemory(appUid, this);
@@ -92,10 +131,10 @@ void LocalConnection::UpdateView(QString appUid)
 
 void LocalConnection::setGeometry(QString appUid, QRect geometry)
 {
-    Q_UNUSED(appUid)
+    m_appUid = appUid;
     if (m_geometry != geometry) {
         qDebug() << "LocalConnection::setGeometry - geometry:" << geometry;
         m_geometry = geometry;
-        emit updateRequest();
+        emit geometryChanged(appUid, m_geometry);
     }
 }
