@@ -27,7 +27,7 @@ private:
     void setGeometry(QString appUid, QRect geometry);
 
 signals:
-    void updateRequest();
+    void updateRequest(QRect);
     void geometryChanged(QString, QRect);
     void connectionClosed();
 

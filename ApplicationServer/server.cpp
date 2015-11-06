@@ -51,6 +51,11 @@ void Server::paintWindows(QRect rect, QRegion region, QPainter* painter)
 //    qDebug("Server::paintWindows - painter: %p", painter);
     Q_UNUSED(rect)
 
+    QMapIterator<Remote::Direction, RemoteConnection*> remoteConnectionIterator(m_remoteConnections);
+    while (remoteConnectionIterator.hasNext()) {
+        remoteConnectionIterator.next();
+        remoteConnectionIterator.value()->paintImages(region, painter);
+    }
 
     int connectionCount(m_localConnections.count());
     for (int i(0); i < connectionCount; i++) {
@@ -82,6 +87,8 @@ void Server::newRemoteConnection()
         m_unconnectedRemoteConnections.append(remoteConnection);
         connect(remoteConnection, SIGNAL(connectionReady()), this, SLOT(remoteConnectionReady()));
         connect(remoteConnection, SIGNAL(connectionClosed()), this, SLOT(remoteConnectionClosed()));
+        connect(remoteConnection, SIGNAL(imageUpdate(QRect)), this, SLOT(remoteUpdate(QRect)));
+
     }
 }
 
@@ -96,6 +103,11 @@ void Server::remoteConnectionReady()
     }
 }
 
+void Server::remoteUpdate(QRect geometry)
+{
+    m_view->update(geometry);
+}
+
 void Server::newLocalConnection()
 {
     qDebug("Server::newLocalConnection");
@@ -103,20 +115,15 @@ void Server::newLocalConnection()
         QLocalSocket* socket(m_localServer->nextPendingConnection());
         LocalConnection* localConnection(new LocalConnection(socket, this));
         m_localConnections.append(localConnection);
-        connect(localConnection, SIGNAL(updateRequest()), this, SLOT(localUpdate()));
+        connect(localConnection, SIGNAL(updateRequest(QRect)), this, SLOT(localUpdate(QRect)));
         connect(localConnection, SIGNAL(geometryChanged(QString QRect)), this, SLOT(localGeometryChanged(QString, QRect)));
         connect(localConnection, SIGNAL(connectionClosed()), this, SLOT(localConnectionClosed()));
     }
 }
 
-void Server::localUpdate()
+void Server::localUpdate(QRect geometry)
 {
-    LocalConnection* localConnection(qobject_cast<LocalConnection*>(sender()));
-    qDebug("Server::localUpdate - localConnection: %p", localConnection);
-    if (localConnection) {
-        m_view->update(localConnection->geometry());
-    }
-    //    m_view->update();
+    m_view->update(geometry);
 }
 
 void Server::localGeometryChanged(QString appUid, QRect geometry)

@@ -25,8 +25,9 @@ protected: // from class WindowHolder
 protected slots:
     void newRemoteConnection();
     void remoteConnectionReady();
+    void remoteUpdate(QRect geometry);
     void newLocalConnection();
-    void localUpdate();
+    void localUpdate(QRect geometry);
     void localGeometryChanged(QString appUid, QRect geometry);
     void localConnectionClosed();
 

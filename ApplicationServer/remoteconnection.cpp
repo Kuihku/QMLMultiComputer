@@ -7,6 +7,8 @@
 #include <QHostAddress>
 #include <QMetaObject>
 #include <QUdpSocket>
+#include <QMapIterator>
+#include <QPainter>
 
 #include <QDebug>
 
@@ -70,6 +72,18 @@ void RemoteConnection::sendImage(QString appUid, const QImage& image)
     RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
     if (remoteApplication) {
         remoteApplication->sendImage(image);
+    }
+}
+
+void RemoteConnection::paintImages(QRegion region, QPainter *painter)
+{
+    QMapIterator<QString, RemoteApplication*> remoteApplicationIterator(m_remoteApplications);
+    while (remoteApplicationIterator.hasNext()) {
+        remoteApplicationIterator.next();
+        RemoteApplication* remoteApplication(remoteApplicationIterator.value());
+        if (region.contains(remoteApplication->geometry())) {
+            remoteApplication->paintImage(painter);
+        }
     }
 }
 
@@ -145,6 +159,7 @@ void RemoteConnection::handleGeometryUpdate(QString appUid, quint16 port, QRect 
     RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
     if (!remoteApplication) {
         remoteApplication = new RemoteApplication(m_myIPv4, port, this);
+        connect(remoteApplication, SIGNAL(imageUpdate(QRect)), this, SIGNAL(imageUpdate(QRect)));
         m_remoteApplications.insert(appUid, remoteApplication);
     }
     remoteApplication->updateGeometry(rect);

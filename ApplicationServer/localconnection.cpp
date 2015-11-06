@@ -126,7 +126,7 @@ void LocalConnection::UpdateView(QString appUid)
     in >> m_image;
     m_shared->unlock();
     m_shared->detach();
-    emit updateRequest();
+    emit updateRequest(m_geometry);
 }
 
 void LocalConnection::setGeometry(QString appUid, QRect geometry)

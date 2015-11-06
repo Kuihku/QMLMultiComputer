@@ -15,9 +15,11 @@ public:
     void updateGeometry(QRect geometry);
     quint16 port() const;
     void sendImage(const QImage& image);
+    QRect geometry() const;
+    void paintImage(class QPainter *painter);
 
 signals:
-    void imageUpdate();
+    void imageUpdate(QRect);
 
 protected slots:
     void readSocket();

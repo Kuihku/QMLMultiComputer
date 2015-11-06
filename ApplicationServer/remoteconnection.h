@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QMap>
 #include <QHostAddress>
+#include <QRegion>
 
 #include "remoteconnectioninfo.h"
 
@@ -17,9 +18,12 @@ public:
     Remote::Direction remoteDirection() const;
     void updateGeometry(QString appUid, int x, int y, int width, int height);
     void sendImage(QString appUid, const QImage& image);
+    void paintImages(QRegion region, class QPainter* painter);
 
 signals:
     void connectionReady();
+    void connectionClosed();
+    void imageUpdate(QRect);
 
 protected slots:
     void socketConnected();
