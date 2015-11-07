@@ -95,11 +95,11 @@ void RemoteConnection::socketDisconnected()
 
 void RemoteConnection::readSocket()
 {
-    qDebug() << "LocalConnection::socketReadyRead - bytes available:" << m_remoteSocket->bytesAvailable();
+    qDebug() << "RemoteConnection::readSocket - bytes available:" << m_remoteSocket->bytesAvailable();
     Message* m(Message::read(m_remoteSocket));
     if (m) {
         switch (m->type()) {
-            case MessageType::Undefined : qWarning("LocalConnection::socketReadyRead - message type: Undefined"); break;
+            case MessageType::Undefined : qWarning("RemoteConnection::readSocket - message type: Undefined"); break;
             case MessageType::RemoteDirection : {
                 RemoteDirectionMessage* rdm(dynamic_cast<RemoteDirectionMessage*>(m));
                 handleRemoteDirection((Remote::Direction)rdm->remoteDirection());
@@ -117,7 +117,7 @@ void RemoteConnection::readSocket()
             break;
             }
             default : {
-                qDebug() << "LocalConnection::socketReadyRead - message:" << *m;
+                qDebug() << "RemoteConnection::readSocket - message:" << *m;
                 break;
             }
         }
