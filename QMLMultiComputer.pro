@@ -3,5 +3,6 @@ CONFIG += ORDERED
 SUBDIRS = \
     Communication \
     ApplicationServer \
-    QMLRunner
+    QMLRunner \
+    Test
 

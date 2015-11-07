@@ -20,7 +20,8 @@ namespace MessageType {
         RemoteDirection = 0x100,
         RemoteLaunch,
         RemoteView,
-        RemoteGeometry
+        RemoteGeometry,
+        RemotePing // For testing purpose
     };
 }
 

@@ -60,7 +60,8 @@ Message* Message::read(QIODevice* socket)
         qDebug() << "Message::read - messageType:" << messageType << "- appUid:" << appUid;
         switch (messageType) {
         case MessageType::Update : ;// fall through
-        case MessageType::RemoteView :
+        case MessageType::RemoteView : ;// fall through
+        case MessageType::RemotePing :
         {
             msg = new Message(appUid, messageType);
             break;

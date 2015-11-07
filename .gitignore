@@ -8,6 +8,7 @@
 *.gch
 *.pch
 moc_*.cpp
+*.moc
 
 # Compiled Dynamic libraries
 *.so
@@ -35,4 +36,5 @@ Makefile*
 *~
 ApplicationServer/ApplicationServer
 QMLRunner/QMLRunner
+Test/ApplicationServer/tst_applicationservertest
 

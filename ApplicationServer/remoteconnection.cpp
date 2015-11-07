@@ -12,27 +12,22 @@
 
 #include <QDebug>
 
-
 RemoteConnection::RemoteConnection(QHostAddress myIPv4, Remote::Direction remoteDirection, QByteArray ip, QObject *parent) :
     QObject(parent),
     m_nextUdpPort(49152),
     m_myIPv4(myIPv4),
     m_remoteDirection(remoteDirection),
-    m_remoteSocket(new QTcpSocket(this)),
-    m_ip(0)
+    m_remoteSocket(new QTcpSocket(this))
 {
-    bool formatOk(false);
-    m_ip = ip.toLong(&formatOk);
-    QHostAddress remoteAddress(m_ip);
-    if (formatOk && !remoteAddress.isNull()) {
+    QHostAddress remoteAddress(QString::fromLatin1(ip));
+    if (remoteAddress.isNull()) {
+        qWarning() << "RemoteConnection::RemoteConnection - error ip:" << ip << "- address:" << remoteAddress;
+    }
+    else {
         connect(m_remoteSocket, SIGNAL(connected()), this, SLOT(socketConnected()));
         connect(m_remoteSocket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
         connect(m_remoteSocket, SIGNAL(readyRead()), this, SLOT(readSocket()));
         m_remoteSocket->connectToHost(remoteAddress, REMOTE_PORT);
-    }
-    else {
-        m_ip = 0;
-        qWarning() << "RemoteConnection::RemoteConnection - error ip:" << ip << "- address:" << remoteAddress;
     }
 }
 
@@ -41,8 +36,7 @@ RemoteConnection::RemoteConnection(QHostAddress myIPv4, QTcpSocket* socket, QObj
     m_nextUdpPort(49152),
     m_myIPv4(myIPv4),
     m_remoteDirection(Remote::Undefined),
-    m_remoteSocket(socket),
-    m_ip(socket->peerAddress().toIPv4Address())
+    m_remoteSocket(socket)
 {
 }
 
@@ -114,6 +108,12 @@ void RemoteConnection::readSocket()
             case MessageType::RemoteGeometry: {
                 RemoteGeometryMessage* gm(dynamic_cast<RemoteGeometryMessage*>(m));
                 handleGeometryUpdate(gm->appUid(), gm->port(), gm->geometry());
+            break;
+            }
+            // TODO: Remove later, For testing purposes only
+            case MessageType::RemotePing: {
+                qDebug("RemoteConnection::readSocket - ping received");
+                m->write(m_remoteSocket);
             break;
             }
             default : {

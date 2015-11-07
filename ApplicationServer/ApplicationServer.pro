@@ -25,6 +25,7 @@ HEADERS += \
 
 
 DEFINES += SERVER_CONFIG=\\\"$$PWD/server_config.txt\\\"
+DEFINES += MYIPADDRESS=\\\"192.168.1.200\\\"
 
 DISTFILES += \
     server_config.txt

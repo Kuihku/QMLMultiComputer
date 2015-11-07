@@ -40,7 +40,6 @@ private:
     Remote::Direction m_remoteDirection;
     class QTcpSocket* m_remoteSocket;
     QMap<QString, class RemoteApplication*> m_remoteApplications;
-    quint32 m_ip;
 
 };
 

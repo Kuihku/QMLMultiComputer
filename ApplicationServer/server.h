@@ -15,7 +15,7 @@ class Server : public QObject, public WindowHolder
 {
     Q_OBJECT
 public:
-    explicit Server(QObject *parent = 0);
+    explicit Server(QString configFile, QObject *parent = 0);
     ~Server();
 
 protected: // from class WindowHolder
@@ -33,7 +33,7 @@ protected slots:
 
 private:
     QHostAddress myIPv4();
-    void parseConfigFile();
+    void parseConfigFile(QString configFile);
 
 signals:
 

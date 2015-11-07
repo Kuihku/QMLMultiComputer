@@ -11,12 +11,11 @@
 #include <QPainter>
 #include <QMapIterator>
 #include <QNetworkInterface>
-
 #include <QCoreApplication>
 
 #include <QDebug>
 
-Server::Server(QObject *parent) :
+Server::Server(QString configFile, QObject *parent) :
     QObject(parent),
     m_view(new MainView(this)),
     m_localServer(new QLocalServer(this)),
@@ -29,7 +28,7 @@ Server::Server(QObject *parent) :
             qWarning() << "Server::Server - m_remoteServer listen error:" << m_remoteServer->errorString();
         }
     }
-    parseConfigFile();
+    parseConfigFile(configFile);
     m_view->showFullScreen();
 
     connect(m_localServer, SIGNAL(newConnection()), this, SLOT(newLocalConnection()));
@@ -37,7 +36,6 @@ Server::Server(QObject *parent) :
     if (!m_localServer->listen("QML1")) {
         qWarning() << "Server::Server - localserver listening error:" << m_localServer->errorString();
     }
-
 }
 
 Server::~Server()
@@ -184,19 +182,31 @@ void Server::localConnectionClosed()
     }
 }
 
+
+
 QHostAddress Server::myIPv4()
 {
-    foreach (const QHostAddress &address, QNetworkInterface::allAddresses()) {
+    QHostAddress myAddress;
+#ifdef MYIPADDRESS
+    myAddress = QHostAddress(MYIPADDRESS);
+#else
+    QList<QHostAddress> allAddresses(QNetworkInterface::allAddresses());
+    int allAddressesCount(allAddresses.count());
+    for (int i(0); i < allAddressesCount && myAddress.isNull(); i++) {
+        QHostAddress address(allAddresses.at(i));
         if (address.protocol() == QAbstractSocket::IPv4Protocol &&
-                address != QHostAddress(QHostAddress::LocalHost))
-            return address;
+                address != QHostAddress(QHostAddress::LocalHost)) {
+            myAddress = address;
+        }
     }
-    return QHostAddress();
+#endif
+    qDebug() << "Server::myIPv4 - myAddress:" << myAddress;
+    return myAddress;
 }
 
-void Server::parseConfigFile()
+void Server::parseConfigFile(QString configFile)
 {
-    QFile serverConfigFile(SERVER_CONFIG);
+    QFile serverConfigFile(configFile);
     if (!serverConfigFile.exists()) {
         qWarning("Missing config file: %s", SERVER_CONFIG);
         return;
@@ -212,7 +222,7 @@ void Server::parseConfigFile()
         int doubleColonIndex(line.indexOf(":"));
         if (doubleColonIndex < 3) continue;
         QByteArray direction(line.left(doubleColonIndex));
-        QByteArray ip(line.mid(doubleColonIndex + 1));
+        QByteArray ip(line.mid(doubleColonIndex + 1).simplified());
 
         if (qstricmp(direction, "northwest")) {
             m_remoteConnections.insert(Remote::NorthWest, new RemoteConnection(m_myIPv4, Remote::NorthWest, ip, this));
