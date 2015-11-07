@@ -36,7 +36,7 @@ private:
     QTcpServer m_tcpServer;
     QProcess m_applicationServer;
     QTcpSocket* m_socket;
-    QList <Message*> m_messageQue;
+    QList <Message*> m_messageQueue;
 
 };
 
@@ -59,12 +59,12 @@ void ApplicationServerTest::incomingTcpConnection()
 
 void ApplicationServerTest::debugApplicationServerStandardOutput()
 {
-    qDebug() << m_applicationServer.readAllStandardOutput();
+    qDebug() << m_applicationServer.readAllStandardOutput().constData();
 }
 
 void ApplicationServerTest::debugApplicationServerStandardError()
 {
-    qWarning() << m_applicationServer.readAllStandardError();
+    qWarning() << m_applicationServer.readAllStandardError().constData();
 }
 
 void ApplicationServerTest::readTcpSocket()
@@ -72,7 +72,7 @@ void ApplicationServerTest::readTcpSocket()
     if (m_socket) {
         Message* m(Message::read(m_socket));
         if (m) {
-            m_messageQue.append(m);
+            m_messageQueue.append(m);
             emit messageReveived(m->type());
         }
     }
@@ -97,9 +97,12 @@ void ApplicationServerTest::initTestCase()
     int directionFormatMessageType(directionSpy.takeFirst().takeFirst().toInt(&directionSpyFormatOk));
     QVERIFY2(directionSpyFormatOk, "Diretion message format failed");
     QVERIFY2(directionFormatMessageType == MessageType::RemoteDirection, "Wrong type in signal in direction message type");
-    Message* m(m_messageQue.takeFirst());
-    QVERIFY2(m->type() == MessageType::RemoteDirection, "Wrong type in que in direction direction message type");
-    delete m;
+    QVERIFY2(!m_messageQueue.isEmpty(), "Message Queue is empty");
+    Message* m(m_messageQueue.takeFirst());
+    QVERIFY2(m->type() == MessageType::RemoteDirection, "Wrong type in Queue in direction direction message type");
+    RemoteDirectionMessage* rdm(dynamic_cast<RemoteDirectionMessage*>(m));
+    QCOMPARE(rdm->remoteDirection(), (int)Remote::West);
+    delete rdm;
 }
 
 void ApplicationServerTest::cleanupTestCase()
@@ -118,8 +121,8 @@ void ApplicationServerTest::cleanupTestCase()
 
 void ApplicationServerTest::cleanup()
 {
-    while (!m_messageQue.isEmpty()) {
-        Message* m(m_messageQue.takeLast());
+    while (!m_messageQueue.isEmpty()) {
+        Message* m(m_messageQueue.takeLast());
         qDebug() << "message type:" << m->type();
         delete m;
     }

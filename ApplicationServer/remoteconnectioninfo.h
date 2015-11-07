@@ -4,7 +4,7 @@
 #define REMOTE_PORT 6120
 
 namespace Remote {
-    enum  Direction{
+    enum  Direction {
         Undefined,
         NorthWest = 1,
         North,

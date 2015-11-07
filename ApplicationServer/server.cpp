@@ -224,30 +224,39 @@ void Server::parseConfigFile(QString configFile)
         QByteArray direction(line.left(doubleColonIndex));
         QByteArray ip(line.mid(doubleColonIndex + 1).simplified());
 
-        if (qstricmp(direction, "northwest")) {
-            m_remoteConnections.insert(Remote::NorthWest, new RemoteConnection(m_myIPv4, Remote::NorthWest, ip, this));
+        Remote::Direction remoteDirection(Remote::Undefined);
+
+        if (qstricmp(direction, "northwest") == 0) {
+            remoteDirection = Remote::NorthWest;
         }
-        else if (qstricmp(direction, "north")) {
-            m_remoteConnections.insert(Remote::North, new RemoteConnection(m_myIPv4, Remote::North, ip, this));
+        else if (qstricmp(direction, "north") == 0) {
+            remoteDirection = Remote::North;
         }
-        else if (qstricmp(direction, "northeast")) {
-            m_remoteConnections.insert(Remote::NorthEast, new RemoteConnection(m_myIPv4, Remote::NorthEast, ip, this));
+        else if (qstricmp(direction, "northeast") == 0) {
+            remoteDirection = Remote::NorthEast;
         }
-        else if (qstricmp(direction, "west")) {
-            m_remoteConnections.insert(Remote::West, new RemoteConnection(m_myIPv4, Remote::West, ip, this));
+        else if (qstricmp(direction, "west") == 0) {
+            remoteDirection = Remote::West;
         }
-        else if (qstricmp(direction, "east")) {
-            m_remoteConnections.insert(Remote::East, new RemoteConnection(m_myIPv4, Remote::East, ip, this));
+        else if (qstricmp(direction, "east") == 0) {
+            remoteDirection = Remote::East;
         }
-        else if (qstricmp(direction, "southwest")) {
-            m_remoteConnections.insert(Remote::SouthWest, new RemoteConnection(m_myIPv4, Remote::SouthWest, ip, this));
+        else if (qstricmp(direction, "southwest") == 0) {
+            remoteDirection = Remote::SouthWest;
         }
-        else if (qstricmp(direction, "south")) {
-            m_remoteConnections.insert(Remote::South, new RemoteConnection(m_myIPv4, Remote::South, ip, this));
+        else if (qstricmp(direction, "south") == 0) {
+            remoteDirection = Remote::South;
         }
-        else if (qstricmp(direction, "southeast")) {
-            m_remoteConnections.insert(Remote::SouthEast, new RemoteConnection(m_myIPv4, Remote::SouthEast, ip, this));
+        else if (qstricmp(direction, "southeast") == 0) {
+            remoteDirection = Remote::SouthEast;
         }
+
+        qDebug() << "Server::parseConfigFile - remoteDirection:" << remoteDirection << "- direction:" << direction;
+
+        if (remoteDirection != Remote::Undefined) {
+            m_remoteConnections.insert(remoteDirection, new RemoteConnection(m_myIPv4, remoteDirection, ip, this));
+        }
+
     }
 
     serverConfigFile.close();
