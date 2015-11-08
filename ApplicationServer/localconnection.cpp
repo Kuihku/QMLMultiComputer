@@ -67,6 +67,12 @@ QString LocalConnection::appUid() const
     return m_appUid;
 }
 
+void LocalConnection::cloneApplication()
+{
+    Message m(m_appUid, MessageType::CloneRequest);
+    m.write(m_socket);
+}
+
 void LocalConnection::socketAboutToClose()
 {
     qDebug("LocalConnection::socketAboutToClose");

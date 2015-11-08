@@ -16,6 +16,8 @@ namespace MessageType {
         Size,
         Close,
         Geometry,
+        CloneRequest,
+        CloneData,
 
         RemoteDirection = 0x100,
         RemoteLaunch,
@@ -99,6 +101,29 @@ private:
 
 protected:
     QPoint m_move;
+
+    friend class Message;
+};
+
+COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const MoveMessage& mm);
+
+class COMMUNICATIONSHARED_EXPORT CloneDataMessage : public Message
+{
+
+public:
+    CloneDataMessage(QString appUid = QString());
+    void setIndexPropertyValue(int index, QString property, QVariant value);
+    QVariant indexPropertyValue(int index, QString property);
+
+protected:
+    CloneDataMessage(QString appUid, QDataStream& ds);
+    virtual void writeData(QDataStream& ds);
+
+private:
+    CloneDataMessage(const CloneDataMessage& other);
+
+protected:
+    QMap<int, QMap<QString, QVariant> > m_indexPropertyValues;
 
     friend class Message;
 };

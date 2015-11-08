@@ -18,6 +18,8 @@
     type == MessageType::RemoteGeometry ? "RemoteGeometry" : \
     type == MessageType::Move ? "Move" : \
     type == MessageType::Size ? "Size" : \
+    type == MessageType::CloneRequest ? "CloneRequest" : \
+    type == MessageType::CloneData ? "CloneData" : \
     type == MessageType::Close ? "Close" : "Type unknown")
 
 Message::Message(QString appUid, int messageType) :
@@ -59,11 +61,18 @@ Message* Message::read(QIODevice* socket)
         ds >> messageType >> appUid;
         qDebug() << "Message::read - messageType:" << messageType << "- appUid:" << appUid;
         switch (messageType) {
-        case MessageType::Update : ;// fall through
-        case MessageType::RemoteView : ;// fall through
+        case MessageType::Update : ; // fall through
+        case MessageType::CloneRequest: ; // fall through
+        case MessageType::RemoteView : ; // fall through
         case MessageType::RemotePing :
         {
             msg = new Message(appUid, messageType);
+            break;
+        }
+        case MessageType::CloneData : {
+            if (bytesAvailable > 0) {
+                msg = new CloneDataMessage(appUid, ds);
+            }
             break;
         }
         case MessageType::RemoteLaunch : {
@@ -475,5 +484,62 @@ QDebug operator<<(QDebug d, const RemoteGeometryMessage& rgm)
 {
     return d << QString("RemoteGeometryMessage(appId: %1, port: %2, geometry:(%3, %4, %5, %6))").arg(rgm.port()).arg(rgm.appUid()).arg(rgm.x()).arg(rgm.y()).arg(rgm.width()).arg(rgm.height()).toLocal8Bit().data();
 }
+
+
+// CloneDataMessage
+
+CloneDataMessage::CloneDataMessage(QString appUid) :
+    Message(appUid, MessageType::CloneData)
+{
+}
+
+void CloneDataMessage::setIndexPropertyValue(int index, QString property, QVariant value)
+{
+    QMap<QString, QVariant> map(m_indexPropertyValues.value(index, QMap<QString, QVariant>()));
+    map.insert(property, value);
+    m_indexPropertyValues.insert(index, map);
+}
+
+QVariant CloneDataMessage::indexPropertyValue(int index, QString property)
+{
+    QMap<QString, QVariant> map(m_indexPropertyValues.value(index, QMap<QString, QVariant>()));
+    return map.value(property, QVariant());
+}
+
+CloneDataMessage::CloneDataMessage(QString appUid, QDataStream &ds) :
+    Message(appUid, MessageType::CloneData)
+{
+    quint32 mapCount;
+    ds >> mapCount;
+    for (int i(0); i < (int)mapCount; i++) {
+        quint32 index;
+        ds >> index;
+        QVariant inVariant;
+        ds >> inVariant;
+        if (inVariant.type() == QVariant::Map) {
+            m_indexPropertyValues.insert(index, inVariant.toMap());
+        }
+    }
+}
+
+void CloneDataMessage::writeData(QDataStream &ds)
+{
+    QList<int> mapIndexes(m_indexPropertyValues.keys());
+    int mapCount(mapIndexes.count());
+    ds << (quint32) mapCount;
+    for (int i(0); i < mapCount; i++) {
+        int index(mapIndexes.at(i));
+        ds << (quint32) index;
+        QVariant outVariant(m_indexPropertyValues.value(index));
+        ds << outVariant;
+    }
+}
+
+CloneDataMessage::CloneDataMessage(const CloneDataMessage &other) :
+    Message(other.appUid(), MessageType::CloneData),
+    m_indexPropertyValues(other.m_indexPropertyValues)
+{
+}
+
 
 // EOF

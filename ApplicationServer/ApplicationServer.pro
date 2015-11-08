@@ -26,6 +26,8 @@ HEADERS += \
 
 DEFINES += SERVER_CONFIG=\\\"$$PWD/server_config.txt\\\"
 DEFINES += MYIPADDRESS=\\\"192.168.1.200\\\"
+DEFINES += APPLICATION_PATH=\\\"$$PWD/Applications\\\"
+DEFINES += QMLRUNNEREXE=\\\"$$PWD/../QMLRunner/QMLRunner\\\"
 
 DISTFILES += \
     server_config.txt

@@ -24,6 +24,7 @@ signals:
     void connectionReady();
     void connectionClosed();
     void imageUpdate(QRect);
+    void launchApplication(QString, QString);
 
 protected slots:
     void socketConnected();
@@ -33,6 +34,7 @@ protected slots:
 private:
     void handleRemoteDirection(Remote::Direction remoteDicrection);
     void handleGeometryUpdate(QString appUid, quint16 port, QRect rect);
+    void handleRemoteLaunchUpdate(QString appUid, QString data);
 
 private:
     quint16 m_nextUdpPort;

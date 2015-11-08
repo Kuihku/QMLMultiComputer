@@ -12,8 +12,12 @@
 #include <QMapIterator>
 #include <QNetworkInterface>
 #include <QCoreApplication>
+#include <QDir>
+#include <QProcess>
 
 #include <QDebug>
+
+#define LOCALSERVERNAME "QML1"
 
 Server::Server(QString configFile, QObject *parent) :
     QObject(parent),
@@ -33,7 +37,7 @@ Server::Server(QString configFile, QObject *parent) :
 
     connect(m_localServer, SIGNAL(newConnection()), this, SLOT(newLocalConnection()));
 
-    if (!m_localServer->listen("QML1")) {
+    if (!m_localServer->listen(LOCALSERVERNAME)) {
         qWarning() << "Server::Server - localserver listening error:" << m_localServer->errorString();
     }
 }
@@ -82,11 +86,8 @@ void Server::newRemoteConnection()
     while (m_remoteServer->hasPendingConnections()) {
         QTcpSocket* socket(m_remoteServer->nextPendingConnection());
         RemoteConnection* remoteConnection(new RemoteConnection(m_myIPv4, socket, this));
+        setupRemoteConnection(remoteConnection);
         m_unconnectedRemoteConnections.append(remoteConnection);
-        connect(remoteConnection, SIGNAL(connectionReady()), this, SLOT(remoteConnectionReady()));
-        connect(remoteConnection, SIGNAL(connectionClosed()), this, SLOT(remoteConnectionClosed()));
-        connect(remoteConnection, SIGNAL(imageUpdate(QRect)), this, SLOT(remoteUpdate(QRect)));
-
     }
 }
 
@@ -128,41 +129,82 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
 {
     QRect viewPort(m_view->rect());
 
-    // check right edge
-    bool rightEdge(false);
-    if ((geometry.x() + geometry.width()) > (viewPort.x() + viewPort.width())) {
-        rightEdge = true;
+    int x(geometry.x());
+    int y(geometry.y());
+    int width(viewPort.width());
+    int height(viewPort.height());
 
-        RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::East, NULL));
+    if (x > width || x < 0 || y > height || y < 0) {
+
+        Remote::Direction launchDirection(Remote::Undefined);
+
+        if (x < 0) {
+            if (y < 0) launchDirection = Remote::NorthWest;
+            else if (y > height) launchDirection = Remote::SouthWest;
+            else launchDirection = Remote::West;
+        }
+        else if (x > width) {
+            if (y < 0) launchDirection = Remote::NorthEast;
+            else if (y > height) launchDirection = Remote::SouthEast;
+            else launchDirection = Remote::East;
+        }
+        else {
+            if (y < 0) launchDirection = Remote::North;
+            else if (y > height) launchDirection = Remote::South;
+        }
+
+        RemoteConnection* remoteConnection(m_remoteConnections.value(launchDirection, NULL));
+
         if (remoteConnection) {
-            remoteConnection->updateGeometry(appUid,
-                                             0,
-                                             geometry.y(),
-                                             (geometry.x() - viewPort.x()),
-                                             (viewPort.height() - geometry.y() + viewPort.y()));
+            //remoteConnection->launchApplication();
+            LocalConnection* localConnection(qobject_cast<LocalConnection*>(sender()));
+
+            if (localConnection) {
+                localConnection->cloneApplication();
+            }
+            else {
+                qWarning() << "Server::localGeometryChanged - Error no localConnection, appUid:" << appUid << " geometry:" <<  geometry.topLeft() << "> viewport:" << viewPort.size();
+            }
         }
     }
+    else {
 
-    // check bottom edge
-    if ((geometry.y() + geometry.height()) > (viewPort.y() + viewPort.height())) {
-        RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::South, NULL));
-        if (remoteConnection) {
-            remoteConnection->updateGeometry(appUid,
-                                             geometry.x(),
-                                             0,
-                                             (viewPort.width() - geometry.x() + viewPort.x()),
-                                             (geometry.y() - viewPort.y()));
-        }
+        // check right edge
+        bool rightEdge(false);
+        if ((geometry.x() + geometry.width()) > (viewPort.x() + viewPort.width())) {
+            rightEdge = true;
 
-        if(rightEdge) {
-            // check bottomright edge
-            RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::SouthEast, NULL));
+            RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::East, NULL));
             if (remoteConnection) {
                 remoteConnection->updateGeometry(appUid,
                                                  0,
-                                                 0,
+                                                 geometry.y(),
                                                  (geometry.x() - viewPort.x()),
+                                                 (viewPort.height() - geometry.y() + viewPort.y()));
+            }
+        }
+
+        // check bottom edge
+        if ((geometry.y() + geometry.height()) > (viewPort.y() + viewPort.height())) {
+            RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::South, NULL));
+            if (remoteConnection) {
+                remoteConnection->updateGeometry(appUid,
+                                                 geometry.x(),
+                                                 0,
+                                                 (viewPort.width() - geometry.x() + viewPort.x()),
                                                  (geometry.y() - viewPort.y()));
+            }
+
+            if(rightEdge) {
+                // check bottomright edge
+                RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::SouthEast, NULL));
+                if (remoteConnection) {
+                    remoteConnection->updateGeometry(appUid,
+                                                     0,
+                                                     0,
+                                                     (geometry.x() - viewPort.x()),
+                                                     (geometry.y() - viewPort.y()));
+                }
             }
         }
     }
@@ -182,7 +224,31 @@ void Server::localConnectionClosed()
     }
 }
 
+void Server::launchApplication(QString appUid, QString data)
+{
+    Q_UNUSED(data)
 
+    int localConnectionsCount(m_localConnections.count());
+    for (int i(0); i < localConnectionsCount; i++) {
+        if (m_localConnections.at(i)->appUid().compare(appUid) == 0) {
+            qWarning() << "Server::launchApplication - Error: trying to launch application that already exists, appUid:" << appUid;
+            return;
+        }
+    }
+
+    QString applicationPath(APPLICATION_PATH);
+    applicationPath.append("/");
+    applicationPath.append(appUid);
+    QDir applicationDir(applicationPath);
+    if (applicationDir.exists(applicationPath)) {
+        if (!QProcess::startDetached(QMLRUNNEREXE, QStringList() << appUid << applicationPath << "main.qml" << LOCALSERVERNAME, applicationPath)) {
+            qWarning() << "Server::launchApplication - Error in QMLRunner QProcess launch, appUid:" << appUid;
+        }
+    }
+    else {
+        qWarning() << "Server::launchApplication - Error in new QMLRunner launch, path:" << applicationPath << "does not exists, appUid:" << appUid;
+    }
+}
 
 QHostAddress Server::myIPv4()
 {
@@ -254,11 +320,20 @@ void Server::parseConfigFile(QString configFile)
         qDebug() << "Server::parseConfigFile - remoteDirection:" << remoteDirection << "- direction:" << direction;
 
         if (remoteDirection != Remote::Undefined) {
-            m_remoteConnections.insert(remoteDirection, new RemoteConnection(m_myIPv4, remoteDirection, ip, this));
+            RemoteConnection* remoteConnection(new RemoteConnection(m_myIPv4, remoteDirection, ip, this));
+            setupRemoteConnection(remoteConnection);
+            m_remoteConnections.insert(remoteDirection, remoteConnection);
         }
 
     }
-
     serverConfigFile.close();
+}
+
+void Server::setupRemoteConnection(RemoteConnection *remoteConnection)
+{
+    connect(remoteConnection, SIGNAL(connectionReady()), this, SLOT(remoteConnectionReady()));
+    connect(remoteConnection, SIGNAL(connectionClosed()), this, SLOT(remoteConnectionClosed()));
+    connect(remoteConnection, SIGNAL(imageUpdate(QRect)), this, SLOT(remoteUpdate(QRect)));
+    connect(remoteConnection, SIGNAL(launchApplication(QString, QString)), this, SLOT(launchApplication(QString, QString)));
 }
 

@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QLocalSocket>
 
+#include "message.h"
+
 class FrameSaver : public QObject
 {
     Q_OBJECT
@@ -17,6 +19,12 @@ public slots:
     void socketDisconnected();
     void socketBytesWritten(qint64 bytes);
     void viewGeometryChanged();
+    void readSocket();
+
+
+private:
+    void handleCloneRequest();
+    void setItemToMessage(CloneDataMessage& cdm, class QQuickItem* item, int index = 0);
 
 private:
     QString m_appUid;

@@ -1,5 +1,4 @@
 #include "framesaver.h"
-#include "message.h"
 
 #include <QQuickView>
 #include <QImage>
@@ -8,6 +7,7 @@
 #include <QSharedMemory>
 #include <QBuffer>
 #include <QPainter>
+#include <QQuickItem>
 
 #include <QDebug>
 
@@ -22,8 +22,8 @@ FrameSaver::FrameSaver(QString appUid, QString server, QQuickView* view, QObject
     connect(m_socket, SIGNAL(connected()), this, SLOT(socketConnected()));
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(socketError(QLocalSocket::LocalSocketError)));
-    connect(m_socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
     connect(m_socket, SIGNAL(bytesWritten(qint64)), this, SLOT(socketBytesWritten(qint64)));
+    connect(m_socket, SIGNAL(readyRead()), this, SLOT(readSocket()));
     m_socket->connectToServer(server);
     connect(view, SIGNAL(frameSwapped()), this, SLOT(save()));
     connect(view, SIGNAL(widthChanged(int)), this, SLOT(viewGeometryChanged()));
@@ -111,4 +111,54 @@ void FrameSaver::viewGeometryChanged()
 {
     GeometryMessage gm(m_appUid, m_view->geometry());
     gm.write(m_socket);
+}
+
+void FrameSaver::readSocket()
+{
+    qDebug() << "FrameSaver::readSocket - bytes available:" << m_socket->bytesAvailable();
+    Message* m(Message::read(m_socket));
+    if (m) {
+        switch (m->type()) {
+            case MessageType::Undefined : qWarning("FrameSaver::readSocket - message type: Undefined"); break;
+            case MessageType::CloneRequest : {
+                handleCloneRequest();
+                break;
+            }
+            default : {
+                qDebug() << "FrameSaver::readSocket - message:" << *m;
+                break;
+            }
+        }
+        delete m;
+    }
+
+}
+
+void FrameSaver::handleCloneRequest()
+{
+    CloneDataMessage cdm(m_appUid);
+    setItemToMessage(cdm, m_view->rootObject());
+    cdm.write(m_socket);
+}
+
+void FrameSaver::setItemToMessage(CloneDataMessage &cdm, QQuickItem *item, int index)
+{
+    QList<QByteArray> properties(item->dynamicPropertyNames());
+    const QMetaObject* metaObject(item->metaObject());
+    int metaObjectPropertyCount(metaObject->propertyCount());
+    for (int i(metaObject->propertyOffset()); i < metaObjectPropertyCount; i++) {
+        properties.append(QByteArray(metaObject->property(i).name()));
+    }
+    int propertyCount(properties.count());
+    for (int i(0); i < propertyCount; i++) {
+        QByteArray propertyName(properties.at(i));
+        cdm.setIndexPropertyValue(index, propertyName, item->property(propertyName.constData()));
+    }
+
+    QList<QQuickItem*> childItemList(item->childItems());
+    int childItemCount(childItemList.count());
+    for (int i(0); i < childItemCount; i++) {
+        QQuickItem* nextItem(childItemList.at(i));
+        setItemToMessage(cdm, nextItem, ++index);
+    }
 }

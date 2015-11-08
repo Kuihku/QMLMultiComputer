@@ -110,6 +110,10 @@ void RemoteConnection::readSocket()
                 handleGeometryUpdate(gm->appUid(), gm->port(), gm->geometry());
             break;
             }
+            case MessageType::RemoteLaunch: {
+                RemoteLaunchMessage* rlm(dynamic_cast<RemoteLaunchMessage*>(m));
+                handleRemoteLaunchUpdate(rlm->appUid(), rlm->data());
+            }
             // TODO: Remove later, For testing purposes only
             case MessageType::RemotePing: {
                 qDebug("RemoteConnection::readSocket - ping received");
@@ -163,4 +167,9 @@ void RemoteConnection::handleGeometryUpdate(QString appUid, quint16 port, QRect 
         m_remoteApplications.insert(appUid, remoteApplication);
     }
     remoteApplication->updateGeometry(rect);
+}
+
+void RemoteConnection::handleRemoteLaunchUpdate(QString appUid, QString data)
+{
+    emit launchApplication(appUid, data);
 }

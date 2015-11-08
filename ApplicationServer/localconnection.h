@@ -16,6 +16,7 @@ public:
     QRect geometry() const;
     QMap<Remote::Direction, QImage> paintImage(class QPainter* painter);
     QString appUid() const;
+    void cloneApplication();
 
 protected slots:
     void socketAboutToClose();

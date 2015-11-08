@@ -31,9 +31,12 @@ protected slots:
     void localGeometryChanged(QString appUid, QRect geometry);
     void localConnectionClosed();
 
+    void launchApplication(QString appUid, QString data);
+
 private:
     QHostAddress myIPv4();
     void parseConfigFile(QString configFile);
+    void setupRemoteConnection(class RemoteConnection* remoteConnection);
 
 signals:
 
