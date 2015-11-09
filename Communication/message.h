@@ -114,7 +114,7 @@ public:
     CloneDataMessage(QString appUid = QString());
     void setIndexPropertyValue(int index, QString property, QVariant value);
     const QVariant indexPropertyValue(int index, QString property) const;
-    const QStringList properties(int index) const;
+    QStringList properties(int index) const;
 
 protected:
     CloneDataMessage(QString appUid, QDataStream& ds);
