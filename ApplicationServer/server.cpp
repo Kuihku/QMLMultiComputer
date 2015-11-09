@@ -102,6 +102,18 @@ void Server::remoteConnectionReady()
     }
 }
 
+void Server::remoteConnectionClosed()
+{
+    RemoteConnection* remoteConnection(qobject_cast<RemoteConnection*>(sender()));
+    if (remoteConnection) {
+        Remote::Direction remoteDirection(m_remoteConnections.key(remoteConnection, Remote::Undefined));
+        if (remoteDirection != Remote::Undefined) {
+            m_remoteConnections.remove(remoteDirection);
+            delete remoteConnection;
+        }
+    }
+}
+
 void Server::remoteUpdate(QRect geometry)
 {
     m_view->update(geometry);

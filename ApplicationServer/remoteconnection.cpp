@@ -38,6 +38,7 @@ RemoteConnection::RemoteConnection(QHostAddress myIPv4, QTcpSocket* socket, QObj
     m_remoteDirection(Remote::Undefined),
     m_remoteSocket(socket)
 {
+    m_remoteSocket->setParent(this);
 }
 
 Remote::Direction RemoteConnection::remoteDirection() const
