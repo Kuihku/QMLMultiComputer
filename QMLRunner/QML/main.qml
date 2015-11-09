@@ -7,6 +7,18 @@ Rectangle {
     height: 200;
     visible: true
 
+    Rectangle {
+        color: "transparent";
+        anchors.centerIn: parent;
+        width: (parent.width - 10);
+        height: (parent.height - 10);
+        radius: 5;
+        border {
+            width: 4;
+            color: "black";
+        }
+    }
+
     MouseArea {
         anchors.fill: parent
         onClicked: {

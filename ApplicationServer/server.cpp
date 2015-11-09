@@ -2,6 +2,7 @@
 #include "localconnection.h"
 #include "remoteconnection.h"
 #include "mainview.h"
+#include "message.h"
 
 #include <QLocalServer>
 #include <QLocalSocket>
@@ -168,10 +169,10 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
         RemoteConnection* remoteConnection(m_remoteConnections.value(launchDirection, NULL));
 
         if (remoteConnection) {
-            //remoteConnection->launchApplication();
+            remoteConnection->ReguestApplicationLaunch(appUid, QString());
             LocalConnection* localConnection(qobject_cast<LocalConnection*>(sender()));
-
             if (localConnection) {
+                connect(localConnection, SIGNAL(cloneDataAvailable(CloneDataMessage*)), remoteConnection, SLOT(localCloneDataAvailable(CloneDataMessage*)), Qt::DirectConnection);
                 localConnection->cloneApplication();
             }
             else {
@@ -262,6 +263,19 @@ void Server::launchApplication(QString appUid, QString data)
     }
 }
 
+void Server::cloneApplicationReceived(CloneDataMessage* cdm)
+{
+    int localConnectionCount(m_localConnections.count());
+    QString appUid(cdm->appUid());
+    for (int i(0); i < localConnectionCount; i++) {
+        LocalConnection* localConnection(m_localConnections.at(i));
+        if (localConnection->appUid().compare(appUid) == 0) {
+            localConnection->setProperties(cdm);
+            return;
+        }
+    }
+}
+
 QHostAddress Server::myIPv4()
 {
     QHostAddress myAddress;
@@ -347,5 +361,6 @@ void Server::setupRemoteConnection(RemoteConnection *remoteConnection)
     connect(remoteConnection, SIGNAL(connectionClosed()), this, SLOT(remoteConnectionClosed()));
     connect(remoteConnection, SIGNAL(imageUpdate(QRect)), this, SLOT(remoteUpdate(QRect)));
     connect(remoteConnection, SIGNAL(launchApplication(QString, QString)), this, SLOT(launchApplication(QString, QString)));
+    connect(remoteConnection, SIGNAL(cloneApplicationReceived(CloneDataMessage*)), this, SLOT(cloneApplicationReceived(CloneDataMessage*)), Qt::DirectConnection);
 }
 

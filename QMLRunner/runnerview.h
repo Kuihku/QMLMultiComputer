@@ -29,6 +29,8 @@ protected:
 private:
     void handleCloneRequest();
     void setItemToMessage(CloneDataMessage& cdm, class QQuickItem* item, int index = 0);
+    void handleCloneData(CloneDataMessage* cdm);
+    void setMessageToItem(CloneDataMessage* cdm, class QQuickItem *item, int index = 0);
 
 private:
     QString m_appUid;

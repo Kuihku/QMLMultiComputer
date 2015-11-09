@@ -73,6 +73,11 @@ void LocalConnection::cloneApplication()
     m.write(m_socket);
 }
 
+void LocalConnection::setProperties(CloneDataMessage *cdm)
+{
+    cdm->write(m_socket);
+}
+
 void LocalConnection::socketAboutToClose()
 {
     qDebug("LocalConnection::socketAboutToClose");
@@ -81,6 +86,7 @@ void LocalConnection::socketAboutToClose()
 void LocalConnection::socketReadyRead()
 {
     qDebug() << "LocalConnection::socketReadyRead - bytes available:" << m_socket->bytesAvailable();
+
     Message* m(Message::read(m_socket));
     if (m) {
         switch (m->type()) {
@@ -90,6 +96,12 @@ void LocalConnection::socketReadyRead()
                 qDebug() << "LocalConnection::socketReadyRead - message: Geometry";
                 GeometryMessage* gm(dynamic_cast<GeometryMessage*>(m));
                 setGeometry(gm->appUid(), gm->geometry());
+                break;
+            }
+            case MessageType::CloneData : {
+                qDebug() << "LocalConnection::socketReadyRead - message: CloneData";
+                CloneDataMessage* cdm(dynamic_cast<CloneDataMessage*>(m));
+                emit cloneDataAvailable(cdm);
                 break;
             }
             default : {

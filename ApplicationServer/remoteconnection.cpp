@@ -82,6 +82,17 @@ void RemoteConnection::paintImages(QRegion region, QPainter *painter)
     }
 }
 
+void RemoteConnection::ReguestApplicationLaunch(QString appUid, QString data)
+{
+    RemoteLaunchMessage rlm(appUid, data);
+    rlm.write(m_remoteSocket);
+}
+
+void RemoteConnection::localCloneDataAvailable(CloneDataMessage* cdm)
+{
+    cdm->write(m_remoteSocket);
+}
+
 void RemoteConnection::socketConnected()
 {
     qDebug("RemoteConnection::socketConnected");
@@ -113,7 +124,12 @@ void RemoteConnection::readSocket()
             }
             case MessageType::RemoteLaunch: {
                 RemoteLaunchMessage* rlm(dynamic_cast<RemoteLaunchMessage*>(m));
-                handleRemoteLaunchUpdate(rlm->appUid(), rlm->data());
+                emit launchApplication(rlm->appUid(), rlm->data());
+            }
+            case MessageType::CloneData : {
+                CloneDataMessage* cdm(dynamic_cast<CloneDataMessage*>(m));
+                emit cloneApplicationReceived(cdm);
+                break;
             }
             // TODO: Remove later, For testing purposes only
             case MessageType::RemotePing: {
@@ -168,9 +184,4 @@ void RemoteConnection::handleGeometryUpdate(QString appUid, quint16 port, QRect 
         m_remoteApplications.insert(appUid, remoteApplication);
     }
     remoteApplication->updateGeometry(rect);
-}
-
-void RemoteConnection::handleRemoteLaunchUpdate(QString appUid, QString data)
-{
-    emit launchApplication(appUid, data);
 }

@@ -19,12 +19,17 @@ public:
     void updateGeometry(QString appUid, int x, int y, int width, int height);
     void sendImage(QString appUid, const QImage& image);
     void paintImages(QRegion region, class QPainter* painter);
+    void ReguestApplicationLaunch(QString appUid, QString data);
 
 signals:
     void connectionReady();
     void connectionClosed();
     void imageUpdate(QRect);
     void launchApplication(QString, QString);
+    void cloneApplicationReceived(class CloneDataMessage*);
+
+public slots:
+    void localCloneDataAvailable(class CloneDataMessage* cdm);
 
 protected slots:
     void socketConnected();
@@ -34,7 +39,6 @@ protected slots:
 private:
     void handleRemoteDirection(Remote::Direction remoteDicrection);
     void handleGeometryUpdate(QString appUid, quint16 port, QRect rect);
-    void handleRemoteLaunchUpdate(QString appUid, QString data);
 
 private:
     quint16 m_nextUdpPort;

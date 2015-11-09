@@ -100,6 +100,11 @@ void RunnerView::readSocket()
                 handleCloneRequest();
                 break;
             }
+            case MessageType::CloneData : {
+                CloneDataMessage* cdm(dynamic_cast<CloneDataMessage*>(m));
+                handleCloneData(cdm);
+                break;
+            }
             default : {
                 qDebug() << "RunnerView::readSocket - message:" << *m;
                 break;
@@ -126,6 +131,7 @@ void RunnerView::resizeEvent(QResizeEvent *event)
     QQuickWidget::resizeEvent(event);
     GeometryMessage gm(m_appUid, geometry());
     gm.write(m_socket);
+    update();
 }
 
 void RunnerView::moveEvent(QMoveEvent *event)
@@ -133,6 +139,7 @@ void RunnerView::moveEvent(QMoveEvent *event)
     QQuickWidget::moveEvent(event);
     GeometryMessage gm(m_appUid, geometry());
     gm.write(m_socket);
+    update();
 }
 
 void RunnerView::handleCloneRequest()
@@ -161,5 +168,26 @@ void RunnerView::setItemToMessage(CloneDataMessage &cdm, QQuickItem *item, int i
     for (int i(0); i < childItemCount; i++) {
         QQuickItem* nextItem(childItemList.at(i));
         setItemToMessage(cdm, nextItem, ++index);
+    }
+}
+
+void RunnerView::handleCloneData(CloneDataMessage* cdm)
+{
+    setMessageToItem(cdm, rootObject());
+}
+
+void RunnerView::setMessageToItem(CloneDataMessage *cdm, QQuickItem* item, int index)
+{
+    QStringList indexProperties(cdm->properties(index));
+    int indexPropertyCount(indexProperties.count());
+    for (int i(0); i < indexPropertyCount; i++) {
+        QString propertyName(indexProperties.at(i));
+        item->setProperty(propertyName.toLatin1().constData(), cdm->indexPropertyValue(index, propertyName));
+    }
+    QList<QQuickItem*> childItemList(item->childItems());
+    int childItemCount(childItemList.count());
+    for (int i(0); i < childItemCount; i++) {
+        QQuickItem* nextItem(childItemList.at(i));
+        setMessageToItem(cdm, nextItem, ++index);
     }
 }

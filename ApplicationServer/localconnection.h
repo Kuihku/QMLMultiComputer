@@ -17,6 +17,7 @@ public:
     QMap<Remote::Direction, QImage> paintImage(class QPainter* painter);
     QString appUid() const;
     void cloneApplication();
+    void setProperties(class CloneDataMessage* cdm);
 
 protected slots:
     void socketAboutToClose();
@@ -31,6 +32,7 @@ signals:
     void updateRequest(QRect);
     void geometryChanged(QString, QRect);
     void connectionClosed();
+    void cloneDataAvailable(class CloneDataMessage* cdm);
 
 public slots:
 

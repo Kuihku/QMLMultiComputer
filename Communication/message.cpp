@@ -506,6 +506,11 @@ QVariant CloneDataMessage::indexPropertyValue(int index, QString property)
     return map.value(property, QVariant());
 }
 
+QStringList CloneDataMessage::properties(int index) const
+{
+    return m_indexPropertyValues.value(index, QMap<QString, QVariant>()).keys();
+}
+
 CloneDataMessage::CloneDataMessage(QString appUid, QDataStream &ds) :
     Message(appUid, MessageType::CloneData)
 {

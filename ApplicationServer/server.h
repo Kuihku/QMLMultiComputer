@@ -33,6 +33,7 @@ protected slots:
     void localConnectionClosed();
 
     void launchApplication(QString appUid, QString data);
+    void cloneApplicationReceived(class CloneDataMessage* cdm);
 
 private:
     QHostAddress myIPv4();
