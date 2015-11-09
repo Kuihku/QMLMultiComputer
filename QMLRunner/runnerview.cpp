@@ -35,9 +35,9 @@ RunnerView::RunnerView(QString appUid, QString server, QWidget* parent) :
 
 void RunnerView::save()
 {
-    QImage image(grabFramebuffer());
-
     if (m_socket->isWritable()) {
+        QImage image(grabFramebuffer());
+
         QBuffer buffer;
         buffer.open(QBuffer::WriteOnly);
         QDataStream out(&buffer);
@@ -131,7 +131,6 @@ void RunnerView::resizeEvent(QResizeEvent *event)
     QQuickWidget::resizeEvent(event);
     GeometryMessage gm(m_appUid, geometry());
     gm.write(m_socket);
-    update();
 }
 
 void RunnerView::moveEvent(QMoveEvent *event)
@@ -139,7 +138,6 @@ void RunnerView::moveEvent(QMoveEvent *event)
     QQuickWidget::moveEvent(event);
     GeometryMessage gm(m_appUid, geometry());
     gm.write(m_socket);
-    update();
 }
 
 void RunnerView::handleCloneRequest()
@@ -155,7 +153,10 @@ void RunnerView::setItemToMessage(CloneDataMessage &cdm, QQuickItem *item, int i
     const QMetaObject* metaObject(item->metaObject());
     int metaObjectPropertyCount(metaObject->propertyCount());
     for (int i(metaObject->propertyOffset()); i < metaObjectPropertyCount; i++) {
-        properties.append(QByteArray(metaObject->property(i).name()));
+        QByteArray propertyName(metaObject->property(i).name());
+        if (!properties.contains(propertyName)) {
+            properties.append(propertyName);
+        }
     }
     int propertyCount(properties.count());
     for (int i(0); i < propertyCount; i++) {

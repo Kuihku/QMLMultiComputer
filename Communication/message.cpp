@@ -500,7 +500,7 @@ void CloneDataMessage::setIndexPropertyValue(int index, QString property, QVaria
     m_indexPropertyValues.insert(index, map);
 }
 
-QVariant CloneDataMessage::indexPropertyValue(int index, QString property)
+const QVariant CloneDataMessage::indexPropertyValue(int index, QString property) const
 {
     QMap<QString, QVariant> map(m_indexPropertyValues.value(index, QMap<QString, QVariant>()));
     return map.value(property, QVariant());

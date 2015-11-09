@@ -113,8 +113,8 @@ class COMMUNICATIONSHARED_EXPORT CloneDataMessage : public Message
 public:
     CloneDataMessage(QString appUid = QString());
     void setIndexPropertyValue(int index, QString property, QVariant value);
-    QVariant indexPropertyValue(int index, QString property);
-    QStringList properties(int index) const;
+    const QVariant indexPropertyValue(int index, QString property) const;
+    const QStringList properties(int index) const;
 
 protected:
     CloneDataMessage(QString appUid, QDataStream& ds);
