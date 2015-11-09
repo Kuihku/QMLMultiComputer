@@ -2,16 +2,16 @@ TEMPLATE = app
 
 TARGET = QMLRunner
 
-QT += qml quick widgets network
+QT = core gui quick qml widgets quickwidgets
 
 CONFIG += c++11
 
 SOURCES += \
     main.cpp \
-    framesaver.cpp
+    runnerview.cpp
 
 HEADERS += \
-    framesaver.h
+    runnerview.h
 
 DISTFILES += \
     QML/main.qml

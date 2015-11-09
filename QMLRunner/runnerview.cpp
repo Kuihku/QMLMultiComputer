@@ -1,6 +1,9 @@
-#include "framesaver.h"
+#include "runnerview.h"
 
-#include <QQuickView>
+#include <QQmlEngine>
+#include <QPaintEvent>
+#include <QResizeEvent>
+#include <QMoveEvent>
 #include <QImage>
 #include <QDateTime>
 #include <QDataStream>
@@ -8,39 +11,31 @@
 #include <QBuffer>
 #include <QPainter>
 #include <QQuickItem>
+#include <QMetaObject>
+#include <QCoreApplication>
 
 #include <QDebug>
 
-FrameSaver::FrameSaver(QString appUid, QString server, QQuickView* view, QObject *parent) :
-    QObject(parent),
+RunnerView::RunnerView(QString appUid, QString server, QWidget* parent) :
+    QQuickWidget(parent),
     m_appUid(appUid),
-    m_view(view),
     m_socket(new QLocalSocket(this)),
     m_shared(new QSharedMemory(appUid, this))
 {
-    qDebug() << "FrameSaver::FrameSaver";
+    qDebug() << "RunnerView::RunnerView";
+    QObject::connect(engine(), SIGNAL(quit()), this, SLOT(quitApplication()));
     connect(m_socket, SIGNAL(connected()), this, SLOT(socketConnected()));
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(socketError(QLocalSocket::LocalSocketError)));
     connect(m_socket, SIGNAL(bytesWritten(qint64)), this, SLOT(socketBytesWritten(qint64)));
     connect(m_socket, SIGNAL(readyRead()), this, SLOT(readSocket()));
     m_socket->connectToServer(server);
-    connect(view, SIGNAL(frameSwapped()), this, SLOT(save()));
-    connect(view, SIGNAL(widthChanged(int)), this, SLOT(viewGeometryChanged()));
-    connect(view, SIGNAL(heightChanged(int)), this, SLOT(viewGeometryChanged()));
-    connect(view, SIGNAL(xChanged(int)), this, SLOT(viewGeometryChanged()));
-    connect(view, SIGNAL(yChanged(int)), this, SLOT(viewGeometryChanged()));
-    qDebug() << "FrameSaver::FrameSaver - END";
+    qDebug() << "RunnerView::RunnerView - END";
 }
 
-void FrameSaver::save()
+void RunnerView::save()
 {
-    QImage image(m_view->grabWindow());
-
-//    if (!m_shared->isAttached()) {
-//        m_shared->create()
-//    }
-
+    QImage image(grabFramebuffer());
 
     if (m_socket->isWritable()) {
         QBuffer buffer;
@@ -56,7 +51,7 @@ void FrameSaver::save()
         }
         if (!m_shared->isAttached()) {
             if (!m_shared->create(size)) {
-                qWarning("FrameSaver::save - m_shared create error");
+                qWarning("RunnerView::save - m_shared create error");
                 return;
             }
 
@@ -67,65 +62,46 @@ void FrameSaver::save()
         memcpy(to, from, qMin(m_shared->size(), size));
         m_shared->unlock();
 
-//        QPainter p(&image);
-//        p.drawText(10, 20, QString::number(realSize));
-
         Message message(m_appUid, MessageType::Update);
         message.write(m_socket);
-
-//        QDataStream pingOut(m_socket);
-//        pingOut << (int)1;
-        // qDebug() << "FrameSaver::save";
     }
-
-//     QString fileName(QDateTime::currentDateTime().toString("yyyy.MM.dd.HH.mm.ss.zzz.png"));
-//     fileName.prepend("images/");
-//     qDebug() << "FrameSaver::save - fileName:" << fileName.toLatin1().constData();
-//    if (!image.save(fileName, "PNG")) {
-//        qDebug() << "FrameSaver::save - Error, fileName:" << fileName.toLatin1().constData();
-    //    }
 }
 
-void FrameSaver::socketError(QLocalSocket::LocalSocketError error)
+void RunnerView::socketError(QLocalSocket::LocalSocketError error)
 {
-    qDebug() << "FrameSaver::socketError - error:" << error;
+    qDebug() << "RunnerView::socketError - error:" << error;
 }
 
-void FrameSaver::socketConnected()
+void RunnerView::socketConnected()
 {
-    qDebug() << "FrameSaver::socketConnected";
+    qDebug() << "RunnerView::socketConnected";
 }
 
-void FrameSaver::socketDisconnected()
+void RunnerView::socketDisconnected()
 {
-    qDebug() << "FrameSaver::socketDisconnected";
+    qDebug() << "RunnerView::socketDisconnected";
     m_shared->detach();
+    QMetaObject::invokeMethod(qApp, "quit", Qt::QueuedConnection);
 }
 
-void FrameSaver::socketBytesWritten(qint64 bytes)
+void RunnerView::socketBytesWritten(qint64 bytes)
 {
-    qDebug() << "FrameSaver::socketBytesWritten - bytes:" << bytes;
+    qDebug() << "RunnerView::socketBytesWritten - bytes:" << bytes;
 }
 
-void FrameSaver::viewGeometryChanged()
+void RunnerView::readSocket()
 {
-    GeometryMessage gm(m_appUid, m_view->geometry());
-    gm.write(m_socket);
-}
-
-void FrameSaver::readSocket()
-{
-    qDebug() << "FrameSaver::readSocket - bytes available:" << m_socket->bytesAvailable();
+    qDebug() << "RunnerView::readSocket - bytes available:" << m_socket->bytesAvailable();
     Message* m(Message::read(m_socket));
     if (m) {
         switch (m->type()) {
-            case MessageType::Undefined : qWarning("FrameSaver::readSocket - message type: Undefined"); break;
+            case MessageType::Undefined : qWarning("RunnerView::readSocket - message type: Undefined"); break;
             case MessageType::CloneRequest : {
                 handleCloneRequest();
                 break;
             }
             default : {
-                qDebug() << "FrameSaver::readSocket - message:" << *m;
+                qDebug() << "RunnerView::readSocket - message:" << *m;
                 break;
             }
         }
@@ -134,14 +110,39 @@ void FrameSaver::readSocket()
 
 }
 
-void FrameSaver::handleCloneRequest()
+void RunnerView::quitApplication()
+{
+    m_socket->close();
+}
+
+void RunnerView::paintEvent(QPaintEvent* event)
+{
+    QQuickWidget::paintEvent(event);
+    QMetaObject::invokeMethod(this, "save", Qt::QueuedConnection);
+}
+
+void RunnerView::resizeEvent(QResizeEvent *event)
+{
+    QQuickWidget::resizeEvent(event);
+    GeometryMessage gm(m_appUid, geometry());
+    gm.write(m_socket);
+}
+
+void RunnerView::moveEvent(QMoveEvent *event)
+{
+    QQuickWidget::moveEvent(event);
+    GeometryMessage gm(m_appUid, geometry());
+    gm.write(m_socket);
+}
+
+void RunnerView::handleCloneRequest()
 {
     CloneDataMessage cdm(m_appUid);
-    setItemToMessage(cdm, m_view->rootObject());
+    setItemToMessage(cdm, rootObject());
     cdm.write(m_socket);
 }
 
-void FrameSaver::setItemToMessage(CloneDataMessage &cdm, QQuickItem *item, int index)
+void RunnerView::setItemToMessage(CloneDataMessage &cdm, QQuickItem *item, int index)
 {
     QList<QByteArray> properties(item->dynamicPropertyNames());
     const QMetaObject* metaObject(item->metaObject());

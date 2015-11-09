@@ -1,26 +1,30 @@
-#ifndef FRAMESAVER_H
-#define FRAMESAVER_H
+#ifndef RUNNERVIEW_H
+#define RUNNERVIEW_H
 
-#include <QObject>
+#include <QQuickWidget>
 #include <QLocalSocket>
 
 #include "message.h"
 
-class FrameSaver : public QObject
+class RunnerView : public QQuickWidget
 {
     Q_OBJECT
 public:
-    explicit FrameSaver(QString appUid, QString server, class QQuickView* view, QObject *parent = 0);
+    explicit RunnerView(QString appUid, QString server, QWidget* parent = 0);
 
-public slots:
+protected slots:
     void save();
     void socketError(QLocalSocket::LocalSocketError error);
     void socketConnected();
     void socketDisconnected();
     void socketBytesWritten(qint64 bytes);
-    void viewGeometryChanged();
     void readSocket();
+    void quitApplication();
 
+protected:
+    virtual void paintEvent(class QPaintEvent* event);
+    virtual void resizeEvent(class QResizeEvent* event);
+    virtual void moveEvent(class QMoveEvent* event);
 
 private:
     void handleCloneRequest();
@@ -28,10 +32,9 @@ private:
 
 private:
     QString m_appUid;
-    class QQuickView* m_view;
     QLocalSocket* m_socket;
     class QSharedMemory* m_shared;
 
 };
 
-#endif // FRAMESAVER_H
+#endif // RUNNERVIEW_H

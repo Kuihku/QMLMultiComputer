@@ -1,15 +1,11 @@
 #include <QApplication>
 #include <QUrl>
-#include <QQuickView>
-#include <QQmlEngine>
-#include <QWindow>
-#include <QMainWindow>
 #include <QStringList>
 #include <QDir>
 
 #include <QDebug>
 
-#include "framesaver.h"
+#include "runnerview.h"
 
 int main(int argc, char *argv[])
 {
@@ -30,30 +26,9 @@ int main(int argc, char *argv[])
 
         if (!QDir::setCurrent(qmlPath)) return -2;
 
-        QMainWindow mainWindow;
-
+        RunnerView mainWindow(appUid, server);
         mainWindow.setAttribute(Qt::WA_DontShowOnScreen);
-
-        QQuickView quickView;
-
-        FrameSaver saver(appUid, server, &quickView);
-
-        QObject::connect(quickView.engine(), SIGNAL(quit()), &app, SLOT(quit()));
-
-        QWidget* container = QWidget::createWindowContainer(&quickView, &mainWindow);
-
-        quickView.setSource(QUrl::fromLocalFile(mainQML));
-        qDebug("quickView size:( %d, %d )", quickView.width(), quickView.height());
-
-        QSize quickViewSize(quickView.size());
-
-        container->resize(quickViewSize);
-        mainWindow.resize(quickViewSize);
-
-        container->setParent(&mainWindow);
-
-        quickView.show();
-
+        mainWindow.setSource(QUrl::fromLocalFile(mainQML));
         mainWindow.show();
 
         int returnValue(app.exec());
