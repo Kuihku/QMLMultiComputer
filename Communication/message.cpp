@@ -16,6 +16,7 @@
     type == MessageType::RemoteView ? "RemoteView" : \
     type == MessageType::RemoteDirection ? "RemoteDirection" : \
     type == MessageType::RemoteGeometry ? "RemoteGeometry" : \
+    type == MessageType::RemoteGetApplication ? "RemoteGetApplication" : \
     type == MessageType::Move ? "Move" : \
     type == MessageType::Size ? "Size" : \
     type == MessageType::CloneRequest ? "CloneRequest" : \
@@ -64,6 +65,7 @@ Message* Message::read(QIODevice* socket)
         case MessageType::Update : ; // fall through
         case MessageType::CloneRequest: ; // fall through
         case MessageType::RemoteView : ; // fall through
+        case MessageType::RemoteGetApplication: ; // fall through
         case MessageType::RemotePing :
         {
             msg = new Message(appUid, messageType);
@@ -102,6 +104,12 @@ Message* Message::read(QIODevice* socket)
         case MessageType::RemoteDirection : {
             if (bytesAvailable >= (qint64)(sizeof(qint32))) {
                 msg = new RemoteDirectionMessage(appUid, ds);
+            }
+            break;
+        }
+        case MessageType::RemoteApplication : {
+            if (bytesAvailable > 0) {
+                msg = new RemoteApplicationMessage(appUid, ds);
             }
             break;
         }
@@ -544,6 +552,61 @@ CloneDataMessage::CloneDataMessage(const CloneDataMessage &other) :
     Message(other.appUid(), MessageType::CloneData),
     m_indexPropertyValues(other.m_indexPropertyValues)
 {
+}
+
+QDebug operator<<(QDebug d, const CloneDataMessage& cdm)
+{
+    return d << QString("CloneDataMessage(appId: %1)").arg(cdm.appUid()).toLocal8Bit().data();
+}
+
+
+// RemoteApplicationMessage
+
+RemoteApplicationMessage::RemoteApplicationMessage(QString appUid) :
+    Message(appUid, MessageType::RemoteApplication)
+{
+}
+
+QStringList RemoteApplicationMessage::files() const
+{
+    return m_fileData.keys();
+}
+
+void RemoteApplicationMessage::setFileData(QString fileName, QByteArray fileData)
+{
+    m_fileData.insert(fileName, QVariant::fromValue<QByteArray>(fileData));
+}
+
+QByteArray RemoteApplicationMessage::fileData(QString fileName) const
+{
+    return m_fileData.value(fileName, QVariant()).toByteArray();
+}
+
+RemoteApplicationMessage::RemoteApplicationMessage(QString appUid, QDataStream &ds) :
+    Message(appUid, MessageType::RemoteApplication)
+{
+    QVariant inVariant;
+    ds >> inVariant;
+    if (inVariant.type() == QVariant::Map) {
+        m_fileData = inVariant.toMap();
+    }
+}
+
+void RemoteApplicationMessage::writeData(QDataStream &ds)
+{
+    QVariant outVariant(m_fileData);
+    ds << outVariant;
+}
+
+RemoteApplicationMessage::RemoteApplicationMessage(const RemoteApplicationMessage &other) :
+    Message(other.m_appUid, other.m_messageType),
+    m_fileData(other.m_fileData)
+{
+}
+
+QDebug operator<<(QDebug d, const RemoteApplicationMessage& ram)
+{
+    return d << QString("RemoteApplicationMessage(appId: %1, file count: %2)").arg(ram.appUid()).arg(ram.files().count()).toLocal8Bit().data();
 }
 
 

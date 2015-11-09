@@ -18,6 +18,7 @@ public:
     QString appUid() const;
     void cloneApplication();
     void setProperties(class CloneDataMessage* cdm);
+    void close();
 
 protected slots:
     void socketAboutToClose();

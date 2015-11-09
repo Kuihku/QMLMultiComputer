@@ -23,6 +23,8 @@ namespace MessageType {
         RemoteLaunch,
         RemoteView,
         RemoteGeometry,
+        RemoteGetApplication,
+        RemoteApplication,
         RemotePing // For testing purpose
     };
 }
@@ -80,6 +82,31 @@ protected:
 };
 
 COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const RemoteLaunchMessage& lm);
+
+class COMMUNICATIONSHARED_EXPORT RemoteApplicationMessage : public Message
+{
+
+public:
+    RemoteApplicationMessage(QString appUid = QString());
+    QStringList files() const;
+    void setFileData(QString fileName, QByteArray fileData);
+    QByteArray fileData(QString fileName) const;
+
+protected:
+    RemoteApplicationMessage(QString appUid, QDataStream& ds);
+    virtual void writeData(QDataStream& ds);
+
+private:
+    RemoteApplicationMessage(const RemoteApplicationMessage& other);
+
+protected:
+    QMap<QString, QVariant> m_fileData;
+
+    friend class Message;
+};
+
+COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const RemoteApplicationMessage& ram);
+
 
 class COMMUNICATIONSHARED_EXPORT MoveMessage : public Message
 {

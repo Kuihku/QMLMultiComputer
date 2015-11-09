@@ -9,6 +9,7 @@
 #include <QUdpSocket>
 #include <QMapIterator>
 #include <QPainter>
+#include <QDir>
 
 #include <QDebug>
 
@@ -88,6 +89,12 @@ void RemoteConnection::ReguestApplicationLaunch(QString appUid, QString data)
     rlm.write(m_remoteSocket);
 }
 
+void RemoteConnection::getApplication(QString appUid)
+{
+    Message rgam(appUid, MessageType::RemoteGetApplication);
+    rgam.write(m_remoteSocket);
+}
+
 void RemoteConnection::localCloneDataAvailable(CloneDataMessage* cdm)
 {
     cdm->write(m_remoteSocket);
@@ -129,6 +136,15 @@ void RemoteConnection::readSocket()
             case MessageType::CloneData : {
                 CloneDataMessage* cdm(dynamic_cast<CloneDataMessage*>(m));
                 emit cloneApplicationReceived(cdm);
+                break;
+            }
+            case MessageType::RemoteGetApplication : {
+                handleApplicationRequest(m->appUid());
+                break;
+            }
+            case MessageType::RemoteApplication : {
+                RemoteApplicationMessage* ram(dynamic_cast<RemoteApplicationMessage*>(m));
+                applicationReceived(ram);
                 break;
             }
             // TODO: Remove later, For testing purposes only
@@ -185,3 +201,31 @@ void RemoteConnection::handleGeometryUpdate(QString appUid, quint16 port, QRect 
     }
     remoteApplication->updateGeometry(rect);
 }
+
+void RemoteConnection::handleApplicationRequest(QString appUid)
+{
+    QString applicationPath(APPLICATION_PATH);
+    applicationPath.append("/");
+    applicationPath.append(appUid);
+    QDir applicationDir(applicationPath);
+    if (applicationDir.exists()) {
+        RemoteApplicationMessage ram(appUid);
+        QStringList files(applicationDir.entryList(QDir::Files));
+        int fileCount(files.count());
+        for (int i(0); i < fileCount; i++) {
+            QString fileName(files.at(i));
+            QString fullPath(applicationPath);
+            fullPath.append("/");
+            fullPath.append(fileName);
+            QFile f(fullPath);
+            if (!f.open(QIODevice::ReadOnly)) {
+                qWarning() << "RemoteConnection::remoteApplicationRequest - Error opening file:" << fullPath << "- code:" << f.errorString();
+                continue;
+            }
+            ram.setFileData(fileName, f.readAll());
+            f.close();
+        }
+        ram.write(m_remoteSocket);
+    }
+}
+

@@ -34,15 +34,12 @@ protected slots:
 
     void launchApplication(QString appUid, QString data);
     void cloneApplicationReceived(class CloneDataMessage* cdm);
+    void applicationReceived(class RemoteApplicationMessage* ram);
 
 private:
     QHostAddress myIPv4();
     void parseConfigFile(QString configFile);
     void setupRemoteConnection(class RemoteConnection* remoteConnection);
-
-signals:
-
-public slots:
 
 private: // data
     QHostAddress m_myIPv4;

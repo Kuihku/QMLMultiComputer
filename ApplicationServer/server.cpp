@@ -174,6 +174,7 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
             if (localConnection) {
                 connect(localConnection, SIGNAL(cloneDataAvailable(CloneDataMessage*)), remoteConnection, SLOT(localCloneDataAvailable(CloneDataMessage*)), Qt::DirectConnection);
                 localConnection->cloneApplication();
+                localConnection->close();
             }
             else {
                 qWarning() << "Server::localGeometryChanged - Error no localConnection, appUid:" << appUid << " geometry:" <<  geometry.topLeft() << "> viewport:" << viewPort.size();
@@ -244,6 +245,7 @@ void Server::launchApplication(QString appUid, QString data)
     int localConnectionsCount(m_localConnections.count());
     for (int i(0); i < localConnectionsCount; i++) {
         if (m_localConnections.at(i)->appUid().compare(appUid) == 0) {
+            // TODO: clone with new appUid
             qWarning() << "Server::launchApplication - Error: trying to launch application that already exists, appUid:" << appUid;
             return;
         }
@@ -259,7 +261,13 @@ void Server::launchApplication(QString appUid, QString data)
         }
     }
     else {
-        qWarning() << "Server::launchApplication - Error in new QMLRunner launch, path:" << applicationPath << "does not exists, appUid:" << appUid;
+        RemoteConnection* remoteConnection(qobject_cast<RemoteConnection*>(sender()));
+        if (remoteConnection) {
+            remoteConnection->getApplication(appUid);
+        }
+        else {
+            qWarning() << "Server::launchApplication - Error in new QMLRunner launch, remoteConnection sender not found for appUid:" << appUid;
+        }
     }
 }
 
@@ -274,6 +282,31 @@ void Server::cloneApplicationReceived(CloneDataMessage* cdm)
             return;
         }
     }
+}
+
+void Server::applicationReceived(RemoteApplicationMessage *ram)
+{
+    QString appUid(ram->appUid());
+    QString applicationPath(APPLICATION_PATH);
+    applicationPath.append("/");
+    applicationPath.append(appUid);
+    QStringList files(ram->files());
+    int fileCount(files.count());
+    for (int i(0); i < fileCount; i++) {
+        QString fileName(files.at(i));
+        QString fullPath(applicationPath);
+        fullPath.append("/");
+        fullPath.append(fileName);
+        QFile f(fullPath);
+        if (!f.open(QIODevice::WriteOnly)) {
+            qWarning() << "Server::applicationReceived - Error opening file:" << fullPath << "- code:" << f.errorString();
+            continue;
+        }
+        f.write(ram->fileData(fileName));
+        f.flush();
+        f.close();
+    }
+    QMetaObject::invokeMethod(this, "launchApplication", Qt::QueuedConnection, Q_ARG(QString, appUid), Q_ARG(QString, QString()));
 }
 
 QHostAddress Server::myIPv4()
@@ -355,12 +388,14 @@ void Server::parseConfigFile(QString configFile)
     serverConfigFile.close();
 }
 
-void Server::setupRemoteConnection(RemoteConnection *remoteConnection)
+void Server::setupRemoteConnection(RemoteConnection* remoteConnection)
 {
     connect(remoteConnection, SIGNAL(connectionReady()), this, SLOT(remoteConnectionReady()));
     connect(remoteConnection, SIGNAL(connectionClosed()), this, SLOT(remoteConnectionClosed()));
     connect(remoteConnection, SIGNAL(imageUpdate(QRect)), this, SLOT(remoteUpdate(QRect)));
     connect(remoteConnection, SIGNAL(launchApplication(QString, QString)), this, SLOT(launchApplication(QString, QString)));
     connect(remoteConnection, SIGNAL(cloneApplicationReceived(CloneDataMessage*)), this, SLOT(cloneApplicationReceived(CloneDataMessage*)), Qt::DirectConnection);
+    connect(remoteConnection, SIGNAL(applicationReceived(class RemoteApplicationMessage*)), this, SLOT(applicationReceived(class RemoteApplicationMessage*)), Qt::DirectConnection);
+
 }
 

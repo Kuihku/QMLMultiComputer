@@ -105,6 +105,7 @@ void RunnerView::readSocket()
                 handleCloneData(cdm);
                 break;
             }
+            case MessageType::Close : quitApplication(); break;
             default : {
                 qDebug() << "RunnerView::readSocket - message:" << *m;
                 break;

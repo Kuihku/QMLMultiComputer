@@ -78,6 +78,12 @@ void LocalConnection::setProperties(CloneDataMessage *cdm)
     cdm->write(m_socket);
 }
 
+void LocalConnection::close()
+{
+    Message m(m_appUid, MessageType::Close);
+    m.write(m_socket);
+}
+
 void LocalConnection::socketAboutToClose()
 {
     qDebug("LocalConnection::socketAboutToClose");
