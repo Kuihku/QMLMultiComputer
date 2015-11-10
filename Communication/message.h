@@ -7,7 +7,6 @@
 #include <QRect>
 #include <QDebug>
 
-
 namespace MessageType {
     enum {
         Undefined = 0,
@@ -18,16 +17,40 @@ namespace MessageType {
         Geometry,
         CloneRequest,
         CloneData,
-
-        RemoteDirection = 0x100,
+        RemoteDirection,
         RemoteLaunch,
         RemoteView,
         RemoteGeometry,
         RemoteGetApplication,
         RemoteApplication,
-        RemotePing // For testing purpose
+
+        // For testing purpose
+        RemotePing
+
+#ifdef COMMUNICATION_TEST
+        // This must be last in this enum for testing purpose
+        , MessageTypeLast
+
+#endif // COMMUNICATION_TEST
     };
 }
+
+#define MSGTYPETOSTRING(type) \
+    QString(type == MessageType::Undefined ? "Undefined" : \
+    type == MessageType::Update ? "Update" : \
+    type == MessageType::Move ? "Move" : \
+    type == MessageType::Size ? "Size" : \
+    type == MessageType::Close ? "Close" : \
+    type == MessageType::Geometry ? "Geometry" : \
+    type == MessageType::CloneRequest ? "CloneRequest" : \
+    type == MessageType::CloneData ? "CloneData" : \
+    type == MessageType::RemoteDirection ? "RemoteDirection" : \
+    type == MessageType::RemoteLaunch ? "RemoteLaunch" : \
+    type == MessageType::RemoteView ? "RemoteView" : \
+    type == MessageType::RemoteGeometry ? "RemoteGeometry" : \
+    type == MessageType::RemoteGetApplication ? "RemoteGetApplication" : \
+    type == MessageType::RemoteApplication ? "RemoteApplication" : \
+    type == MessageType::RemotePing? "RemotePing" : QString("Type unknown: %1").arg(type))
 
 #if defined(COMMUNICATION_LIBRARY)
 #  define COMMUNICATIONSHARED_EXPORT Q_DECL_EXPORT
@@ -43,8 +66,11 @@ public:
     virtual ~Message();
     QString appUid() const;
     int type() const;
+
+    // note: on static method Message::read returned Message* ownership is changed,
+    // i.e. caller must delete Message*
     static Message* read(class QIODevice* socket);
-    bool write(class QIODevice* socket);
+    qint64 write(class QIODevice* socket);
 
 protected:
     virtual void writeData(QDataStream& ds);

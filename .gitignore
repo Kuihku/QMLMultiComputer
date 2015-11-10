@@ -37,4 +37,4 @@ Makefile*
 ApplicationServer/ApplicationServer
 QMLRunner/QMLRunner
 Test/ApplicationServer/tst_applicationservertest
-
+Test/Communication/tst_communicationtest

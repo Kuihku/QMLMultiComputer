@@ -1,5 +1,4 @@
-QT       += network
-QT       -= gui
+QT       = core network
 
 TARGET = Communication
 TEMPLATE = lib

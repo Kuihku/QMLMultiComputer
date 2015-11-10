@@ -9,20 +9,6 @@
 
 // Message
 
-#define MSGTYPETOSTRING(type) \
-    QString(type == MessageType::Undefined ? "Undefined" : \
-    type == MessageType::Update ? "Update" : \
-    type == MessageType::RemoteLaunch ? "RemoteLaunch" : \
-    type == MessageType::RemoteView ? "RemoteView" : \
-    type == MessageType::RemoteDirection ? "RemoteDirection" : \
-    type == MessageType::RemoteGeometry ? "RemoteGeometry" : \
-    type == MessageType::RemoteGetApplication ? "RemoteGetApplication" : \
-    type == MessageType::Move ? "Move" : \
-    type == MessageType::Size ? "Size" : \
-    type == MessageType::CloneRequest ? "CloneRequest" : \
-    type == MessageType::CloneData ? "CloneData" : \
-    type == MessageType::Close ? "Close" : "Type unknown")
-
 Message::Message(QString appUid, int messageType) :
     m_appUid(appUid),
     m_messageType(messageType)
@@ -46,9 +32,10 @@ int Message::type() const
 Message* Message::read(QIODevice* socket)
 {
     Message* msg(NULL);
+
     if (socket &&
         socket->isReadable() &&
-        socket->bytesAvailable() > (int)sizeof(quint32)) {
+        socket->bytesAvailable() > 2 * (int)sizeof(quint32)) {
         QDataStream ds(socket);
         qint32 messageType;
         quint32 dataSize;
@@ -60,17 +47,7 @@ Message* Message::read(QIODevice* socket)
             return msg;
         }
         ds >> messageType >> appUid;
-        qDebug() << "Message::read - messageType:" << messageType << "- appUid:" << appUid;
         switch (messageType) {
-        case MessageType::Update : ; // fall through
-        case MessageType::CloneRequest: ; // fall through
-        case MessageType::RemoteView : ; // fall through
-        case MessageType::RemoteGetApplication: ; // fall through
-        case MessageType::RemotePing :
-        {
-            msg = new Message(appUid, messageType);
-            break;
-        }
         case MessageType::CloneData : {
             if (bytesAvailable > 0) {
                 msg = new CloneDataMessage(appUid, ds);
@@ -113,8 +90,17 @@ Message* Message::read(QIODevice* socket)
             }
             break;
         }
+        case MessageType::Update : ; // fall through
+        case MessageType::CloneRequest: ; // fall through
+        case MessageType::RemoteView : ; // fall through
+        case MessageType::RemoteGetApplication: ; // fall through
+        case MessageType::RemotePing : // fall through
         default : {
-//            socket->readAll();
+        {
+            qDebug() << "Message::read - messageType: Message";
+            msg = new Message(appUid, messageType);
+            break;
+        }
         }
         }
 
@@ -126,8 +112,9 @@ Message* Message::read(QIODevice* socket)
     return msg;
 }
 
-bool Message::write(QIODevice* socket)
+qint64 Message::write(QIODevice* socket)
 {
+    qint64  bytesWritten(0);
     if (socket &&
         socket->isWritable() &&
         m_messageType != MessageType::Undefined) {
@@ -137,10 +124,9 @@ bool Message::write(QIODevice* socket)
         writeData(ds);
         ds.device()->seek(0);
         ds << (quint32)(data.size() - sizeof(quint32));
-        socket->write(data);
-        return true;
+        bytesWritten = socket->write(data);
     }
-    return false;
+    return bytesWritten;
 }
 
 void Message::writeData(QDataStream& ds)
