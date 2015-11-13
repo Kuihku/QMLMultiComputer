@@ -6,3 +6,6 @@ SUBDIRS = \
     QMLRunner \
     Test
 
+mkpath(Common)
+mkpath(Libs)
+
