@@ -32,7 +32,7 @@ equals(TARGET_PLATFORM, "arm") {
 } else: {
     DEFINES += SERVER_CONFIG=\\\"$$PWD/server_config.txt\\\"
     DEFINES += APPLICATION_PATH=\\\"$$PWD/Applications\\\"
-    DEFINES += MYIPADDRESS=\\\"192.168.1.200\\\"
+#    DEFINES += MYIPADDRESS=\\\"192.168.1.200\\\"
     DEFINES += QMLRUNNEREXE=\\\"$$PWD/../QMLRunner/QMLRunner\\\"
 }
 

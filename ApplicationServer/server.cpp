@@ -83,7 +83,7 @@ void Server::paintWindows(QRect rect, QRegion region, QPainter* painter)
 
 void Server::newRemoteConnection()
 {
-    qDebug("Server::newLocalConnection");
+    qDebug("Server::newRemoteConnection");
     while (m_remoteServer->hasPendingConnections()) {
         QTcpSocket* socket(m_remoteServer->nextPendingConnection());
         RemoteConnection* remoteConnection(new RemoteConnection(m_myIPv4, socket, this));
