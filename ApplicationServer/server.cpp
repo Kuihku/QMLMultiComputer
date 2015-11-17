@@ -39,7 +39,19 @@ Server::Server(QString configFile, QObject *parent) :
     connect(m_localServer, SIGNAL(newConnection()), this, SLOT(newLocalConnection()));
 
     if (!m_localServer->listen(LOCALSERVERNAME)) {
-        qWarning() << "Server::Server - localserver listening error:" << m_localServer->errorString();
+        if (m_localServer->serverError() == QAbstractSocket::AddressInUseError) {
+            if (QLocalServer::removeServer(LOCALSERVERNAME)) {
+                if (m_localServer->listen(LOCALSERVERNAME)) {
+                    qWarning() << "Server::Server - localserver re listening error:" << m_localServer->errorString();
+                }
+            }
+            else {
+                qWarning("Server::Server - QLocalServer::removeServer error");
+            }
+        }
+        else {
+            qWarning() << "Server::Server - localserver listening error:" << m_localServer->errorString();
+        }
     }
 }
 
@@ -210,6 +222,7 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
             }
 
             if(rightEdge) {
+                qDebug("Server::localGeometryChanged - over right and bottom border");
                 // check bottomright edge
                 RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::SouthEast, NULL));
                 if (remoteConnection) {
@@ -220,6 +233,12 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
                                                      (geometry.y() - viewPort.y()));
                 }
             }
+            else {
+                qDebug("Server::localGeometryChanged - over bottom border");
+            }
+        }
+        else if (rightEdge) {
+            qDebug("Server::localGeometryChanged - over right border");
         }
     }
 }
