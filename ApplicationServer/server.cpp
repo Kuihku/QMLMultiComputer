@@ -41,7 +41,7 @@ Server::Server(QString configFile, QObject *parent) :
     if (!m_localServer->listen(LOCALSERVERNAME)) {
         if (m_localServer->serverError() == QAbstractSocket::AddressInUseError) {
             if (QLocalServer::removeServer(LOCALSERVERNAME)) {
-                if (m_localServer->listen(LOCALSERVERNAME)) {
+                if (!m_localServer->listen(LOCALSERVERNAME)) {
                     qWarning() << "Server::Server - localserver re listening error:" << m_localServer->errorString();
                 }
             }
