@@ -233,8 +233,10 @@ void Server::localConnectionClosed()
         localConnection->deleteLater();
     }
     if (m_localConnections.isEmpty()) {
-        m_localServer->close();
-        qApp->exit();
+        qDebug("Server::localConnectionClosed - last connection closed");
+//        m_localServer->close();
+//        m_remoteServer->close();
+//        qApp->exit();
     }
 }
 
