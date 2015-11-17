@@ -23,11 +23,20 @@ HEADERS += \
     remoteconnectioninfo.h \
     remoteapplication.h
 
+message(QMAKE_SPEC: $$[QMAKE_SPEC])
 
-DEFINES += SERVER_CONFIG=\\\"$$PWD/server_config.txt\\\"
-DEFINES += MYIPADDRESS=\\\"192.168.1.200\\\"
-DEFINES += APPLICATION_PATH=\\\"$$PWD/Applications\\\"
-DEFINES += QMLRUNNEREXE=\\\"$$PWD/../QMLRunner/QMLRunner\\\"
+TARGET_PLATFORM = arm
+
+equals(TARGET_PLATFORM, "arm") {
+    DEFINES += SERVER_CONFIG=\\\"/home/tuheimon/QMLMultiComputer/ApplicationServer/server_config.txt\\\"
+    DEFINES += APPLICATION_PATH=\\\"/home/tuheimon/QMLMultiComputer/ApplicationServer/Applications\\\"
+    DEFINES += QMLRUNNEREXE=\\\"/home/tuheimon/QMLMultiComputer/QMLRunner/QMLRunner\\\"
+} else: {
+    DEFINES += SERVER_CONFIG=\\\"$$PWD/server_config.txt\\\"
+    DEFINES += APPLICATION_PATH=\\\"$$PWD/Applications\\\"
+    DEFINES += MYIPADDRESS=\\\"192.168.1.200\\\"
+    DEFINES += QMLRUNNEREXE=\\\"$$PWD/../QMLRunner/QMLRunner\\\"
+}
 
 DISTFILES += \
     server_config.txt
