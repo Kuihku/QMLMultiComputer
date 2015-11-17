@@ -201,6 +201,7 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
             rightEdge = true;
 
             RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::East, NULL));
+            qDebug("Server::localGeometryChanged - east remoteConnection: %p", remoteConnection);
             if (remoteConnection) {
                 remoteConnection->updateGeometry(appUid,
                                                  0,
@@ -213,6 +214,7 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
         // check bottom edge
         if ((geometry.y() + geometry.height()) > (viewPort.y() + viewPort.height())) {
             RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::South, NULL));
+            qDebug("Server::localGeometryChanged - south remoteConnection: %p", remoteConnection);
             if (remoteConnection) {
                 remoteConnection->updateGeometry(appUid,
                                                  geometry.x(),
@@ -225,6 +227,7 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
                 qDebug("Server::localGeometryChanged - over right and bottom border");
                 // check bottomright edge
                 RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::SouthEast, NULL));
+                qDebug("Server::localGeometryChanged - southeast remoteConnection: %p", remoteConnection);
                 if (remoteConnection) {
                     remoteConnection->updateGeometry(appUid,
                                                      0,

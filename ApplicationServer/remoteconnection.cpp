@@ -50,6 +50,7 @@ Remote::Direction RemoteConnection::remoteDirection() const
 void RemoteConnection::updateGeometry(QString appUid, int x, int y, int width, int height)
 {
     RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
+    qDebug("RemoteConnection::updateGeometry - m_remoteDirection: %d, remoteApplication: %p", m_remoteDirection, remoteApplication);
     if (!remoteApplication) {
         remoteApplication = new RemoteApplication(m_myIPv4, m_nextUdpPort++, this);
         if (m_nextUdpPort > 65534) {
@@ -66,6 +67,7 @@ void RemoteConnection::updateGeometry(QString appUid, int x, int y, int width, i
 void RemoteConnection::sendImage(QString appUid, const QImage& image)
 {
     RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
+    qDebug("RemoteConnection::sendImage - m_remoteDirection: %d, remoteApplication: %p", m_remoteDirection, remoteApplication);
     if (remoteApplication) {
         remoteApplication->sendImage(image);
     }

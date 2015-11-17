@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QHostAddress>
+#include <QAbstractSocket>
 #include <QRect>
 #include <QImage>
 
@@ -23,6 +24,7 @@ signals:
 
 protected slots:
     void readSocket();
+    void socketError(QAbstractSocket::SocketError error);
 
 private:
     QHostAddress m_myIPv4;
