@@ -26,7 +26,7 @@ RemoteConnection::RemoteConnection(QHostAddress myIPv4, Remote::Direction remote
     }
     else {
         connect(m_remoteSocket, SIGNAL(connected()), this, SLOT(socketConnected()));
-        connect(m_remoteSocket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
+        connect(m_remoteSocket, SIGNAL(disconnected()), this, SIGNAL(connectionClosed()));
         connect(m_remoteSocket, SIGNAL(readyRead()), this, SLOT(readSocket()));
         m_remoteSocket->connectToHost(remoteAddress, REMOTE_PORT);
     }
@@ -105,11 +105,6 @@ void RemoteConnection::socketConnected()
     qDebug("RemoteConnection::socketConnected");
     RemoteDirectionMessage rdm(QString(), m_remoteDirection);
     rdm.write(m_remoteSocket);
-}
-
-void RemoteConnection::socketDisconnected()
-{
-    qDebug("RemoteConnection::socketDisconnected");
 }
 
 void RemoteConnection::readSocket()

@@ -35,7 +35,6 @@ public slots:
 
 protected slots:
     void socketConnected();
-    void socketDisconnected();
     void readSocket();
 
 private:
