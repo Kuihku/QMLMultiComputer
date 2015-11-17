@@ -1,0 +1,6 @@
+#!/bin/bash
+
+scp ApplicationServer/ApplicationServer tuheimon@$1:~/QMLMultiComputer/ApplicationServer/ApplicationServer
+scp Libs/* tuheimon@$1:~/QMLMultiComputer/Libs/
+scp QMLRunner/QMLRunner tuheimon@$1:~/QMLMultiComputer/QMLRunner/QMLRunner
+

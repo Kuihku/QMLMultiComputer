@@ -128,7 +128,7 @@ void Server::newLocalConnection()
         LocalConnection* localConnection(new LocalConnection(socket, this));
         m_localConnections.append(localConnection);
         connect(localConnection, SIGNAL(updateRequest(QRect)), this, SLOT(localUpdate(QRect)));
-        connect(localConnection, SIGNAL(geometryChanged(QString QRect)), this, SLOT(localGeometryChanged(QString, QRect)));
+        connect(localConnection, SIGNAL(geometryChanged(QString, QRect)), this, SLOT(localGeometryChanged(QString, QRect)));
         connect(localConnection, SIGNAL(connectionClosed()), this, SLOT(localConnectionClosed()));
     }
 }
