@@ -23,9 +23,7 @@ HEADERS += \
     remoteconnectioninfo.h \
     remoteapplication.h
 
-message(QMAKE_SPEC: $$[QMAKE_SPEC])
-
-TARGET_PLATFORM = arm
+# TARGET_PLATFORM = arm
 
 equals(TARGET_PLATFORM, "arm") {
     DEFINES += SERVER_CONFIG=\\\"/home/tuheimon/QMLMultiComputer/ApplicationServer/server_config.txt\\\"
