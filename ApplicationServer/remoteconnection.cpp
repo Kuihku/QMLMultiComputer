@@ -203,6 +203,7 @@ void RemoteConnection::handleGeometryUpdate(QString appUid, QRect rect)
             m_nextUdpPort = FIRSTREMOTEAPPPORT;
         }
         connect(remoteApplication, SIGNAL(imageUpdate(QRect)), this, SIGNAL(imageUpdate(QRect)));
+        remoteApplication->bind();
         m_remoteApplications.insert(appUid, remoteApplication);
         RemotePortMessage rpm(appUid, remoteApplication->port());
         rpm.write(m_remoteSocket);

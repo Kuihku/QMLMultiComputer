@@ -13,12 +13,16 @@ RemoteApplication::RemoteApplication(QHostAddress IPv4, quint16 port, QObject *p
 {
     connect(m_udpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
     connect(m_udpSocket, SIGNAL(bytesWritten(qint64)), this, SLOT(udbBytesWritten(qint64)));
-    if (!m_udpSocket->bind(IPv4, port)) {
-        qWarning() << "RemoteApplication::RemoteApplication - udpSocket bind error:" << m_udpSocket->errorString();
+}
+
+void RemoteApplication::bind()
+{
+    if (m_udpSocket->bind(m_IPv4, m_port)) {
+        qDebug() << "RemoteApplication::bind - udpSocket bind addr:" << m_IPv4 << "- port:" << m_port;
+        connect(m_udpSocket, SIGNAL(readyRead()), this, SLOT(readSocket()));
     }
     else {
-        qDebug() << "RemoteApplication::RemoteApplication - udpSocket bind addr:" << IPv4 << "- port:" << port;
-        connect(m_udpSocket, SIGNAL(readyRead()), this, SLOT(readSocket()));
+        qWarning() << "RemoteApplication::bind - udpSocket bind error:" << m_udpSocket->errorString();
     }
 }
 
