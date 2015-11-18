@@ -44,6 +44,12 @@ RemoteConnection::RemoteConnection(QHostAddress myIPv4, QTcpSocket* socket, QObj
     setupRemoteSocket();
 }
 
+RemoteConnection::~RemoteConnection()
+{
+    m_remoteSocket->close();
+    qDebug("RemoteConnection::~RemoteConnection: %p, m_remoteSocket: %p ", this, m_remoteSocket);
+}
+
 Remote::Direction RemoteConnection::remoteDirection() const
 {
     return m_remoteDirection;
@@ -52,6 +58,7 @@ Remote::Direction RemoteConnection::remoteDirection() const
 void RemoteConnection::updateGeometry(QString appUid, int x, int y, int width, int height)
 {
     GeometryMessage gm(appUid, x, y, width, height);
+    qDebug() << "RemoteConnection::updateGeometry - geometry:" << gm.geometry();
     gm.write(m_remoteSocket);
 }
 
@@ -97,7 +104,7 @@ void RemoteConnection::socketConnected()
 {
     qDebug("RemoteConnection::socketConnected");
     RemoteDirectionMessage rdm(QString(), m_remoteDirection);
-    rdm.write(m_remoteSocket);
+    Q_ASSERT(rdm.write(m_remoteSocket));
 }
 
 void RemoteConnection::readSocket()
@@ -155,30 +162,31 @@ void RemoteConnection::readSocket()
     }
 }
 
-void RemoteConnection::handleRemoteDirection(Remote::Direction remoteDicrection)
+void RemoteConnection::handleRemoteDirection(Remote::Direction remoteDirection)
 {
-    if (remoteDicrection == Remote::NorthWest) {
+    qDebug("RemoteConnection::handleRemoteDirection - remoteDirection: %s", qPrintable(REMOTETOSTRING(remoteDirection)));
+    if (remoteDirection == Remote::NorthWest) {
         m_remoteDirection = Remote::SouthEast;
     }
-    else if (remoteDicrection == Remote::North) {
+    else if (remoteDirection == Remote::North) {
         m_remoteDirection = Remote::South;
     }
-    else if (remoteDicrection == Remote::NorthEast) {
-        m_remoteDirection = Remote::SouthWest;
-    }
-    else if (remoteDicrection == Remote::West) {
+//    else if (remoteDirection == Remote::NorthEast) {
+//        m_remoteDirection = Remote::SouthWest;
+//    }
+    else if (remoteDirection == Remote::West) {
         m_remoteDirection = Remote::East;
     }
-    else if (remoteDicrection == Remote::East) {
+    else if (remoteDirection == Remote::East) {
         m_remoteDirection = Remote::West;
     }
-    else if (remoteDicrection == Remote::SouthWest) {
-        m_remoteDirection = Remote::NorthEast;
-    }
-    else if (remoteDicrection == Remote::South) {
+//    else if (remoteDirection == Remote::SouthWest) {
+//        m_remoteDirection = Remote::NorthEast;
+//    }
+    else if (remoteDirection == Remote::South) {
         m_remoteDirection = Remote::North;
     }
-    else if (remoteDicrection == Remote::SouthEast) {
+    else if (remoteDirection == Remote::SouthEast) {
         m_remoteDirection = Remote::NorthWest;
     }
     emit connectionReady();
@@ -188,6 +196,7 @@ void RemoteConnection::handleGeometryUpdate(QString appUid, QRect rect)
 {
     RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
     qDebug("RemoteConnection::handleGeometryUpdate - m_remoteDirection: %s, appUid: %s, remoteApplication: %p", REMOTETOSTRING(m_remoteDirection), qPrintable(appUid), remoteApplication);
+    qDebug() << "RemoteConnection::handleGeometryUpdate - rect:" << rect;
     if (!remoteApplication) {
         remoteApplication = new RemoteApplication(m_myIPv4, m_nextUdpPort++, this);
         if (m_nextUdpPort > LASTREMOTEAPPPORT) {

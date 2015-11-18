@@ -106,6 +106,7 @@ void Server::newRemoteConnection()
 
 void Server::remoteConnectionReady()
 {
+    qDebug("Server::remoteConnectionReady");
     RemoteConnection* remoteConnection(qobject_cast<RemoteConnection*>(sender()));
     if (remoteConnection) {
         m_unconnectedRemoteConnections.removeAll(remoteConnection);
@@ -120,6 +121,7 @@ void Server::remoteConnectionClosed()
     RemoteConnection* remoteConnection(qobject_cast<RemoteConnection*>(sender()));
     if (remoteConnection) {
         Remote::Direction remoteDirection(m_remoteConnections.key(remoteConnection, Remote::Undefined));
+        qDebug("Server::remoteConnectionClosed - direction: %s", qPrintable(REMOTETOSTRING(remoteDirection)));
         if (remoteDirection != Remote::Undefined) {
             m_remoteConnections.remove(remoteDirection);
             delete remoteConnection;
@@ -129,6 +131,7 @@ void Server::remoteConnectionClosed()
 
 void Server::remoteUpdate(QRect geometry)
 {
+    qDebug() << "Server::remoteUpdate - geometry:" << geometry;
     m_view->update(geometry);
 }
 
@@ -165,12 +168,12 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
 
         if (x < 0) {
             if (y < 0) launchDirection = Remote::NorthWest;
-            else if (y > height) launchDirection = Remote::SouthWest;
+            // else if (y > height) launchDirection = Remote::SouthWest;
             else launchDirection = Remote::West;
         }
         else if (x > width) {
-            if (y < 0) launchDirection = Remote::NorthEast;
-            else if (y > height) launchDirection = Remote::SouthEast;
+            // if (y < 0) launchDirection = Remote::NorthEast;
+            if (y > height) launchDirection = Remote::SouthEast;
             else launchDirection = Remote::East;
         }
         else {
@@ -201,39 +204,35 @@ void Server::localGeometryChanged(QString appUid, QRect geometry)
             rightEdge = true;
 
             RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::East, NULL));
-            qDebug("Server::localGeometryChanged - east remoteConnection: %p", remoteConnection);
             if (remoteConnection) {
                 remoteConnection->updateGeometry(appUid,
                                                  0,
                                                  geometry.y(),
-                                                 (geometry.x() - viewPort.x()),
-                                                 (viewPort.height() - geometry.y() + viewPort.y()));
+                                                 (geometry.x() + geometry.width() - viewPort.width() - viewPort.x()),
+                                                 geometry.height());
             }
         }
 
         // check bottom edge
         if ((geometry.y() + geometry.height()) > (viewPort.y() + viewPort.height())) {
             RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::South, NULL));
-            qDebug("Server::localGeometryChanged - south remoteConnection: %p", remoteConnection);
             if (remoteConnection) {
                 remoteConnection->updateGeometry(appUid,
                                                  geometry.x(),
                                                  0,
-                                                 (viewPort.width() - geometry.x() + viewPort.x()),
-                                                 (geometry.y() - viewPort.y()));
+                                                 geometry.width(),
+                                                 (geometry.y() + geometry.height() - viewPort.y() - viewPort.height()));
             }
 
             if(rightEdge) {
-                qDebug("Server::localGeometryChanged - over right and bottom border");
                 // check bottomright edge
                 RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::SouthEast, NULL));
-                qDebug("Server::localGeometryChanged - southeast remoteConnection: %p", remoteConnection);
                 if (remoteConnection) {
                     remoteConnection->updateGeometry(appUid,
                                                      0,
                                                      0,
-                                                     (geometry.x() - viewPort.x()),
-                                                     (geometry.y() - viewPort.y()));
+                                                     (geometry.x() + geometry.width() - viewPort.width() - viewPort.x()),
+                                                     (geometry.y() + geometry.height() - viewPort.y() - viewPort.height()));
                 }
             }
             else {
@@ -381,18 +380,18 @@ void Server::parseConfigFile(QString configFile)
         else if (qstricmp(direction, "north") == 0) {
             remoteDirection = Remote::North;
         }
-        else if (qstricmp(direction, "northeast") == 0) {
-            remoteDirection = Remote::NorthEast;
-        }
+//        else if (qstricmp(direction, "northeast") == 0) {
+//            remoteDirection = Remote::NorthEast;
+//        }
         else if (qstricmp(direction, "west") == 0) {
             remoteDirection = Remote::West;
         }
         else if (qstricmp(direction, "east") == 0) {
             remoteDirection = Remote::East;
         }
-        else if (qstricmp(direction, "southwest") == 0) {
-            remoteDirection = Remote::SouthWest;
-        }
+//        else if (qstricmp(direction, "southwest") == 0) {
+//            remoteDirection = Remote::SouthWest;
+//        }
         else if (qstricmp(direction, "south") == 0) {
             remoteDirection = Remote::South;
         }

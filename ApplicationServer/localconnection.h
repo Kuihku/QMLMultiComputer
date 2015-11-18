@@ -12,7 +12,7 @@ class LocalConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit LocalConnection(QLocalSocket* socket, QObject *parent = 0);
+    explicit LocalConnection(QLocalSocket* socket, QObject *parent = Q_NULLPTR);
     QRect geometry() const;
     QMap<Remote::Direction, QImage> paintImage(class QPainter* painter);
     QString appUid() const;
@@ -24,6 +24,7 @@ protected slots:
     void socketAboutToClose();
     void socketReadyRead();
     void socketError(QLocalSocket::LocalSocketError error);
+    void socketBytesWritten(qint64 bytes);
 
 private:
     void UpdateView(QString appUid);

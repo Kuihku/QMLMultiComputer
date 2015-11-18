@@ -15,8 +15,8 @@ class Server : public QObject, public WindowHolder
 {
     Q_OBJECT
 public:
-    explicit Server(QString configFile, QObject *parent = 0);
-    ~Server();
+    explicit Server(QString configFile, QObject* parent = Q_NULLPTR);
+    virtual ~Server();
 
 protected: // from class WindowHolder
     virtual void paintWindows(QRect rect, QRegion region, class QPainter* painter);

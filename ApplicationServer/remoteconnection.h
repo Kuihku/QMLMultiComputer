@@ -13,8 +13,9 @@ class RemoteConnection : public QObject
     Q_OBJECT
 
 public:
-    RemoteConnection(QHostAddress myIPv4, Remote::Direction remoteDirection, QByteArray ip, QObject* parent = NULL);
-    RemoteConnection(QHostAddress myIPv4, class QTcpSocket* socket, QObject* parent = NULL);
+    RemoteConnection(QHostAddress myIPv4, Remote::Direction remoteDirection, QByteArray ip, QObject* parent = Q_NULLPTR);
+    RemoteConnection(QHostAddress myIPv4, class QTcpSocket* socket, QObject* parent = Q_NULLPTR);
+    virtual ~RemoteConnection();
     Remote::Direction remoteDirection() const;
     void updateGeometry(QString appUid, int x, int y, int width, int height);
     void sendImage(QString appUid, const QImage& image);

@@ -11,7 +11,7 @@ class RemoteApplication : public QObject
 {
     Q_OBJECT
 public:
-    explicit RemoteApplication(QHostAddress IPv4, quint16 port, QObject *parent = 0);
+    explicit RemoteApplication(QHostAddress IPv4, quint16 port, QObject *parent = Q_NULLPTR);
     class QUdpSocket* udpSocket() const;
     void updateGeometry(QRect geometry);
     quint16 port() const;
@@ -25,6 +25,7 @@ signals:
 protected slots:
     void readSocket();
     void socketError(QAbstractSocket::SocketError error);
+    void udbBytesWritten(qint64 bytes);
 
 private:
     QHostAddress m_IPv4;

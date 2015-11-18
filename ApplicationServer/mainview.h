@@ -7,7 +7,7 @@ class MainView : public QWidget
 {
     Q_OBJECT
 public:
-    explicit MainView(class WindowHolder* windowHolder, QWidget *parent = 0);
+    explicit MainView(class WindowHolder* windowHolder, QWidget *parent = Q_NULLPTR);
 
 protected:
     virtual void paintEvent(class QPaintEvent* event);

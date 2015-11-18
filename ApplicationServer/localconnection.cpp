@@ -12,6 +12,7 @@ LocalConnection::LocalConnection(QLocalSocket* socket, QObject* parent) :
     m_socket(socket),
     m_shared(NULL)
 {
+    connect(m_socket, SIGNAL(bytesWritten(qint64)), this, SLOT(socketBytesWritten(qint64)));
     connect(m_socket, SIGNAL(aboutToClose()), this, SLOT(socketAboutToClose()));
     connect(m_socket, SIGNAL(disconnected()), this, SIGNAL(connectionClosed()));
     connect(m_socket, SIGNAL(readyRead()), this, SLOT(socketReadyRead()));
@@ -25,8 +26,8 @@ QRect LocalConnection::geometry() const
 
 QMap<Remote::Direction, QImage> LocalConnection::paintImage(QPainter* painter)
 {
-    qDebug() << "LocalConnection::paintImage - m_geometry:" << m_geometry;
     QRect viewPort(painter->viewport());
+    qDebug() << "LocalConnection::paintImage - m_geometry:" << m_geometry << "- viewPort:" << viewPort;
     QRect outRect(viewPort.intersected(m_geometry));
     painter->drawImage(outRect, m_image.copy(outRect));
     QMap<Remote::Direction, QImage> extImgs;
@@ -35,10 +36,11 @@ QMap<Remote::Direction, QImage> LocalConnection::paintImage(QPainter* painter)
         bool rightEdge(false);
         if ((m_geometry.x() + m_geometry.width()) > (viewPort.x() + viewPort.width())) {
             rightEdge = true;
-            extImgs.insert(Remote::East, m_image.copy((viewPort.width() + viewPort.x() - m_geometry.x()),
-                                                      0,
-                                                      (m_geometry.x() - viewPort.x()),
-                                                      (viewPort.height() - m_geometry.y() + viewPort.y())));
+            QImage img(m_image.copy((viewPort.width() + viewPort.x() - m_geometry.x()),
+                                    0,
+                                    (m_geometry.x() + m_geometry.width() - viewPort.width() - viewPort.x()),
+                                    m_geometry.height()));
+            extImgs.insert(Remote::East, img);
         }
 
 
@@ -46,15 +48,15 @@ QMap<Remote::Direction, QImage> LocalConnection::paintImage(QPainter* painter)
         if ((m_geometry.y() + m_geometry.height()) > (viewPort.y() + viewPort.height())) {
             extImgs.insert(Remote::South, m_image.copy(0,
                                                       (viewPort.height() + viewPort.y() - m_geometry.y()),
-                                                      (viewPort.width() - m_geometry.x() + viewPort.x()),
-                                                      (m_geometry.y() - viewPort.y())));
+                                                      m_geometry.width(),
+                                                      (m_geometry.y() + m_geometry.height() - viewPort.height() - viewPort.y())));
 
             if(rightEdge) {
                 // check bottomright edge
                 extImgs.insert(Remote::SouthEast, m_image.copy((viewPort.x() + viewPort.width() - m_geometry.x()),
                                                                (viewPort.y() + viewPort.height() - m_geometry.y()),
-                                                               (m_geometry.x() - viewPort.x()),
-                                                               (m_geometry.y() - viewPort.y())));
+                                                               (m_geometry.x() + m_geometry.width() - viewPort.width() - viewPort.x()),
+                                                               (m_geometry.y() + m_geometry.height() - viewPort.height() - viewPort.y())));
             }
         }
 
@@ -122,6 +124,11 @@ void LocalConnection::socketReadyRead()
 void LocalConnection::socketError(QLocalSocket::LocalSocketError error)
 {
     qWarning() << "LocalConnection::socketError - error:" << error;
+}
+
+void LocalConnection::socketBytesWritten(qint64 bytes)
+{
+    qDebug("LocalConnection::socketBytesWritten - bytes: %d", (int)bytes);
 }
 
 void LocalConnection::UpdateView(QString appUid)

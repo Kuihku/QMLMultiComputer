@@ -12,6 +12,7 @@ RemoteApplication::RemoteApplication(QHostAddress IPv4, quint16 port, QObject *p
     m_udpSocket(new QUdpSocket(this))
 {
     connect(m_udpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
+    connect(m_udpSocket, SIGNAL(bytesWritten(qint64)), this, SLOT(udbBytesWritten(qint64)));
     if (!m_udpSocket->bind(IPv4, port)) {
         qWarning() << "RemoteApplication::RemoteApplication - udpSocket bind error:" << m_udpSocket->errorString();
     }
@@ -38,13 +39,14 @@ quint16 RemoteApplication::port() const
 
 void RemoteApplication::sendImage(const QImage &image)
 {
-    QByteArray ba;
-    QBuffer buffer(&ba);
-    Q_ASSERT(buffer.open(QIODevice::WriteOnly));
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
     QDataStream out(&buffer);
     out << image;
+    int size(buffer.size());
+    qDebug() << "RemoteApplication::sendImage - bytearray size:" << size;
+    m_udpSocket->writeDatagram(buffer.data(), size, m_IPv4, m_port);
     buffer.close();
-    Q_ASSERT(ba.size() == m_udpSocket->writeDatagram(ba.data(), ba.size(), m_IPv4, m_port));
 }
 
 QRect RemoteApplication::geometry() const
@@ -76,17 +78,20 @@ void RemoteApplication::readSocket()
         buffer.close();
         if (!image.isNull()) {
             m_image = image;
+            emit imageUpdate(m_geometry);
         }
         else {
             qWarning("RemoteApplication::readSocket - Error: image is null");
         }
-    }
-    if (!m_image.isNull()) {
-        emit imageUpdate(m_geometry);
     }
 }
 
 void RemoteApplication::socketError(QAbstractSocket::SocketError error)
 {
     qWarning() << "RemoteApplication::socketError - code:" << error << "- error:" << m_udpSocket->errorString();
+}
+
+void RemoteApplication::udbBytesWritten(qint64 bytes)
+{
+    qDebug("RemoteApplication::udbBytesWritten - bytes: %d", (int)bytes);
 }
