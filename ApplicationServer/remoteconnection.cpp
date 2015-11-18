@@ -13,9 +13,12 @@
 
 #include <QDebug>
 
+#define FIRSTREMOTEAPPPORT 49152
+#define LASTREMOTEAPPPORT 65534
+
 RemoteConnection::RemoteConnection(QHostAddress myIPv4, Remote::Direction remoteDirection, QByteArray ip, QObject *parent) :
     QObject(parent),
-    m_nextUdpPort(49152),
+    m_nextUdpPort(FIRSTREMOTEAPPPORT),
     m_myIPv4(myIPv4),
     m_remoteDirection(remoteDirection),
     m_remoteSocket(new QTcpSocket(this))
@@ -25,21 +28,20 @@ RemoteConnection::RemoteConnection(QHostAddress myIPv4, Remote::Direction remote
         qWarning() << "RemoteConnection::RemoteConnection - error ip:" << ip << "- address:" << remoteAddress;
     }
     else {
-        connect(m_remoteSocket, SIGNAL(connected()), this, SLOT(socketConnected()));
-        connect(m_remoteSocket, SIGNAL(disconnected()), this, SIGNAL(connectionClosed()));
-        connect(m_remoteSocket, SIGNAL(readyRead()), this, SLOT(readSocket()));
+        setupRemoteSocket();
         m_remoteSocket->connectToHost(remoteAddress, REMOTE_PORT);
     }
 }
 
 RemoteConnection::RemoteConnection(QHostAddress myIPv4, QTcpSocket* socket, QObject *parent) :
     QObject(parent),
-    m_nextUdpPort(49152),
+    m_nextUdpPort(FIRSTREMOTEAPPPORT),
     m_myIPv4(myIPv4),
     m_remoteDirection(Remote::Undefined),
     m_remoteSocket(socket)
 {
     m_remoteSocket->setParent(this);
+    setupRemoteSocket();
 }
 
 Remote::Direction RemoteConnection::remoteDirection() const
@@ -49,25 +51,14 @@ Remote::Direction RemoteConnection::remoteDirection() const
 
 void RemoteConnection::updateGeometry(QString appUid, int x, int y, int width, int height)
 {
-    RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
-    qDebug("RemoteConnection::updateGeometry - m_remoteDirection: %d, remoteApplication: %p", m_remoteDirection, remoteApplication);
-    if (!remoteApplication) {
-        remoteApplication = new RemoteApplication(m_myIPv4, m_nextUdpPort++, this);
-        if (m_nextUdpPort > 65534) {
-            m_nextUdpPort = 49153;
-        }
-        m_remoteApplications.insert(appUid, remoteApplication);
-    }
-    if (m_remoteSocket->isWritable()) {
-        RemoteGeometryMessage gm(appUid, remoteApplication->port(), x, y, width, height);
-        gm.write(m_remoteSocket);
-    }
+    GeometryMessage gm(appUid, x, y, width, height);
+    gm.write(m_remoteSocket);
 }
 
 void RemoteConnection::sendImage(QString appUid, const QImage& image)
 {
     RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
-    qDebug("RemoteConnection::sendImage - m_remoteDirection: %d, remoteApplication: %p", m_remoteDirection, remoteApplication);
+    qDebug("RemoteConnection::sendImage - m_remoteDirection: %s, appUid: %s, remoteApplication: %p", REMOTETOSTRING(m_remoteDirection), qPrintable(appUid), remoteApplication);
     if (remoteApplication) {
         remoteApplication->sendImage(image);
     }
@@ -121,9 +112,9 @@ void RemoteConnection::readSocket()
                 handleRemoteDirection((Remote::Direction)rdm->remoteDirection());
                 break;
             }
-            case MessageType::RemoteGeometry: {
-                RemoteGeometryMessage* gm(dynamic_cast<RemoteGeometryMessage*>(m));
-                handleGeometryUpdate(gm->appUid(), gm->port(), gm->geometry());
+            case MessageType::Geometry: {
+                GeometryMessage* gm(dynamic_cast<GeometryMessage*>(m));
+                handleGeometryUpdate(gm->appUid(), gm->geometry());
             break;
             }
             case MessageType::RemoteLaunch: {
@@ -137,6 +128,11 @@ void RemoteConnection::readSocket()
             }
             case MessageType::RemoteGetApplication : {
                 handleApplicationRequest(m->appUid());
+                break;
+            }
+            case MessageType::RemotePort : {
+                RemotePortMessage* rpm(dynamic_cast<RemotePortMessage*>(m));
+                handleRemotePort(rpm->appUid(), rpm->port());
                 break;
             }
             case MessageType::RemoteApplication : {
@@ -188,13 +184,19 @@ void RemoteConnection::handleRemoteDirection(Remote::Direction remoteDicrection)
     emit connectionReady();
 }
 
-void RemoteConnection::handleGeometryUpdate(QString appUid, quint16 port, QRect rect)
+void RemoteConnection::handleGeometryUpdate(QString appUid, QRect rect)
 {
     RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
+    qDebug("RemoteConnection::handleGeometryUpdate - m_remoteDirection: %s, appUid: %s, remoteApplication: %p", REMOTETOSTRING(m_remoteDirection), qPrintable(appUid), remoteApplication);
     if (!remoteApplication) {
-        remoteApplication = new RemoteApplication(m_myIPv4, port, this);
+        remoteApplication = new RemoteApplication(m_myIPv4, m_nextUdpPort++, this);
+        if (m_nextUdpPort > LASTREMOTEAPPPORT) {
+            m_nextUdpPort = FIRSTREMOTEAPPPORT;
+        }
         connect(remoteApplication, SIGNAL(imageUpdate(QRect)), this, SIGNAL(imageUpdate(QRect)));
         m_remoteApplications.insert(appUid, remoteApplication);
+        RemotePortMessage rpm(appUid, remoteApplication->port());
+        rpm.write(m_remoteSocket);
     }
     remoteApplication->updateGeometry(rect);
 }
@@ -224,5 +226,22 @@ void RemoteConnection::handleApplicationRequest(QString appUid)
         }
         ram.write(m_remoteSocket);
     }
+}
+
+void RemoteConnection::handleRemotePort(QString appUid, int port)
+{
+    RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
+    qDebug("RemoteConnection::handleRemotePort - m_remoteDirection: %s, appUid: %s, remoteApplication: %p", REMOTETOSTRING(m_remoteDirection), qPrintable(appUid), remoteApplication);
+    if (!remoteApplication) {
+        remoteApplication = new RemoteApplication(m_remoteSocket->peerAddress(), port, this);
+        m_remoteApplications.insert(appUid, remoteApplication);
+    }
+}
+
+void RemoteConnection::setupRemoteSocket()
+{
+    connect(m_remoteSocket, SIGNAL(connected()), this, SLOT(socketConnected()));
+    connect(m_remoteSocket, SIGNAL(disconnected()), this, SIGNAL(connectionClosed()));
+    connect(m_remoteSocket, SIGNAL(readyRead()), this, SLOT(readSocket()));
 }
 

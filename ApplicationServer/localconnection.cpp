@@ -150,6 +150,7 @@ void LocalConnection::UpdateView(QString appUid)
     in >> m_image;
     m_shared->unlock();
     m_shared->detach();
+    buffer.close();
     emit updateRequest(m_geometry);
 }
 

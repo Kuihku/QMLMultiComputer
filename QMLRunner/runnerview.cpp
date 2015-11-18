@@ -61,6 +61,7 @@ void RunnerView::save()
         const char* from(buffer.data().data());
         memcpy(to, from, qMin(m_shared->size(), size));
         m_shared->unlock();
+        buffer.close();
 
         Message message(m_appUid, MessageType::Update);
         message.write(m_socket);

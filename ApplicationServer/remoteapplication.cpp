@@ -2,20 +2,21 @@
 
 #include <QUdpSocket>
 #include <QBuffer>
+#include <QDataStream>
 #include <QPainter>
 
-RemoteApplication::RemoteApplication(QHostAddress myIPv4, quint16 port, QObject *parent) :
+RemoteApplication::RemoteApplication(QHostAddress IPv4, quint16 port, QObject *parent) :
     QObject(parent),
-    m_myIPv4(myIPv4),
+    m_IPv4(IPv4),
     m_port(port),
     m_udpSocket(new QUdpSocket(this))
 {
     connect(m_udpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
-    if (!m_udpSocket->bind(myIPv4, port)) {
+    if (!m_udpSocket->bind(IPv4, port)) {
         qWarning() << "RemoteApplication::RemoteApplication - udpSocket bind error:" << m_udpSocket->errorString();
     }
     else {
-        qDebug() << "RemoteApplication::RemoteApplication - udpSocket bind addr:" << myIPv4 << "- port:" << port;
+        qDebug() << "RemoteApplication::RemoteApplication - udpSocket bind addr:" << IPv4 << "- port:" << port;
         connect(m_udpSocket, SIGNAL(readyRead()), this, SLOT(readSocket()));
     }
 }
@@ -39,14 +40,11 @@ void RemoteApplication::sendImage(const QImage &image)
 {
     QByteArray ba;
     QBuffer buffer(&ba);
-    buffer.open(QIODevice::WriteOnly);
-    // writes image into ba in PNG format
-    if (image.save(&buffer, "PNG")) {
-        m_udpSocket->writeDatagram(ba.data(), ba.size(), m_myIPv4, m_port);
-    }
-    else {
-        qWarning("RemoteApplication::sendImage - save error");
-    }
+    Q_ASSERT(buffer.open(QIODevice::WriteOnly));
+    QDataStream out(&buffer);
+    out << image;
+    buffer.close();
+    Q_ASSERT(ba.size() == m_udpSocket->writeDatagram(ba.data(), ba.size(), m_IPv4, m_port));
 }
 
 QRect RemoteApplication::geometry() const
@@ -69,7 +67,13 @@ void RemoteApplication::readSocket()
         datagram.resize(size);
         qDebug("RemoteApplication::readSocket - size: %d", (int)size);
         m_udpSocket->readDatagram(datagram.data(), datagram.size());
-        QImage image(QImage::fromData(datagram, "PNG"));
+        QBuffer buffer;
+        buffer.setData(datagram);
+        buffer.open(QBuffer::ReadOnly);
+        QDataStream in(&buffer);
+        QImage image;
+        in >> image;
+        buffer.close();
         if (!image.isNull()) {
             m_image = image;
         }

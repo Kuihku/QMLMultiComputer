@@ -39,8 +39,10 @@ protected slots:
 
 private:
     void handleRemoteDirection(Remote::Direction remoteDicrection);
-    void handleGeometryUpdate(QString appUid, quint16 port, QRect rect);
+    void handleGeometryUpdate(QString appUid, QRect rect);
     void handleApplicationRequest(QString appUid);
+    void handleRemotePort(QString appUid, int port);
+    void setupRemoteSocket();
 
 private:
     quint16 m_nextUdpPort;

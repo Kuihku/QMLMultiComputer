@@ -20,7 +20,7 @@ namespace MessageType {
         RemoteDirection,
         RemoteLaunch,
         RemoteView,
-        RemoteGeometry,
+        RemotePort,
         RemoteGetApplication,
         RemoteApplication,
 
@@ -47,7 +47,7 @@ namespace MessageType {
     type == MessageType::RemoteDirection ? "RemoteDirection" : \
     type == MessageType::RemoteLaunch ? "RemoteLaunch" : \
     type == MessageType::RemoteView ? "RemoteView" : \
-    type == MessageType::RemoteGeometry ? "RemoteGeometry" : \
+    type == MessageType::RemotePort ? "RemotePort" : \
     type == MessageType::RemoteGetApplication ? "RemoteGetApplication" : \
     type == MessageType::RemoteApplication ? "RemoteApplication" : \
     type == MessageType::RemotePing? "RemotePing" : QString("Type unknown: %1").arg(type))
@@ -265,21 +265,20 @@ protected:
 
 COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const RemoteDirectionMessage& sm);
 
-class COMMUNICATIONSHARED_EXPORT RemoteGeometryMessage : public GeometryMessage
+class COMMUNICATIONSHARED_EXPORT RemotePortMessage : public Message
 {
 
 public:
-    RemoteGeometryMessage(QString appUid = QString(), quint32 port = 0, int x = 0, int y = 0, int width = 0, int height = 0);
-    RemoteGeometryMessage(QString appUid, quint32 port, QRect geometry);
+    RemotePortMessage(QString appUid = QString(), quint32 port = 0);
     quint32 port() const;
     void setPort(quint32 port);
 
 protected:
-    RemoteGeometryMessage(QString appUid, QDataStream& ds);
+    RemotePortMessage(QString appUid, QDataStream& ds);
     virtual void writeData(QDataStream& ds);
 
 private:
-    RemoteGeometryMessage(const RemoteGeometryMessage& other);
+    RemotePortMessage(const RemotePortMessage& other);
 
 protected:
     int m_port;
@@ -287,7 +286,7 @@ protected:
     friend class Message;
 };
 
-COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const RemoteGeometryMessage& gm);
+COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const RemotePortMessage& gm);
 
 
 #endif // MESSAGE_H

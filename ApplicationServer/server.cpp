@@ -400,9 +400,8 @@ void Server::parseConfigFile(QString configFile)
             remoteDirection = Remote::SouthEast;
         }
 
-        qDebug() << "Server::parseConfigFile - remoteDirection:" << remoteDirection << "- direction:" << direction;
-
         if (remoteDirection != Remote::Undefined) {
+            qDebug() << "Server::parseConfigFile - remoteDirection:" << remoteDirection << "- direction:" << direction;
             RemoteConnection* remoteConnection(new RemoteConnection(m_myIPv4, remoteDirection, ip, this));
             setupRemoteConnection(remoteConnection);
             m_remoteConnections.insert(remoteDirection, remoteConnection);

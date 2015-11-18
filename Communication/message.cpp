@@ -36,6 +36,7 @@ Message* Message::read(QIODevice* socket)
     if (socket &&
         socket->isReadable() &&
         socket->bytesAvailable() > 2 * (int)sizeof(quint32)) {
+
         QDataStream ds(socket);
         qint32 messageType;
         quint32 dataSize;
@@ -90,19 +91,25 @@ Message* Message::read(QIODevice* socket)
             }
             break;
         }
+        case MessageType::RemotePort : {
+            if (bytesAvailable > 0) {
+                msg = new RemotePortMessage(appUid, ds);
+            }
+            break;
+        }
         case MessageType::Update : ; // fall through
         case MessageType::CloneRequest: ; // fall through
         case MessageType::RemoteView : ; // fall through
         case MessageType::RemoteGetApplication: ; // fall through
-        case MessageType::RemotePing : // fall through
-        default : {
-        {
+        case MessageType::RemotePing : {
             qDebug() << "Message::read - messageType: Message";
             msg = new Message(appUid, messageType);
             break;
         }
+        default : {
+            qWarning("Message::read - Error: Unhandled message: %s", qPrintable(MSGTYPETOSTRING(messageType)));
         }
-        }
+        } // end of switch
 
         if (ds.status() != QDataStream::Ok) {
             delete msg;
@@ -115,9 +122,16 @@ Message* Message::read(QIODevice* socket)
 qint64 Message::write(QIODevice* socket)
 {
     qint64  bytesWritten(0);
-    if (socket &&
-        socket->isWritable() &&
-        m_messageType != MessageType::Undefined) {
+    if (!socket) {
+        qWarning("Message::write - Error socket is NULL");
+    }
+    else if (!socket->isWritable()) {
+        qWarning("Message::write - Error socket not opened for writing");
+    }
+    else if (m_messageType == MessageType::Undefined) {
+        qWarning("Message::write - Error: message type is Undefined");
+    }
+    else {
         QByteArray data;
         QDataStream ds(&data, QIODevice::WriteOnly);
         ds << (quint32)0 << (qint32)m_messageType << m_appUid;
@@ -429,54 +443,44 @@ QDebug operator<<(QDebug d, const RemoteDirectionMessage& rdm)
 }
 
 
-// RemoteGeometryMessage
+// RemotePortMessage
 
-RemoteGeometryMessage::RemoteGeometryMessage(QString appUid, quint32 port, int x, int y, int width, int height) :
-    GeometryMessage(appUid, x, y, width, height),
+RemotePortMessage::RemotePortMessage(QString appUid, quint32 port) :
+    Message(appUid, MessageType::RemotePort),
     m_port(port)
 {
-    m_messageType = MessageType::RemoteGeometry;
 }
 
-RemoteGeometryMessage::RemoteGeometryMessage(QString appUid, quint32 port, QRect geometry) :
-    GeometryMessage(appUid, geometry),
-    m_port(port)
-{
-    m_messageType = MessageType::RemoteGeometry;
-}
-
-quint32 RemoteGeometryMessage::port() const
+quint32 RemotePortMessage::port() const
 {
     return m_port;
 }
 
-void RemoteGeometryMessage::setPort(quint32 port)
+void RemotePortMessage::setPort(quint32 port)
 {
     m_port = port;
 }
 
-RemoteGeometryMessage::RemoteGeometryMessage(QString appUid, QDataStream &ds) :
-    GeometryMessage(appUid, ds)
+RemotePortMessage::RemotePortMessage(QString appUid, QDataStream &ds) :
+    Message(appUid, MessageType::RemotePort)
 {
     ds >> m_port;
 }
 
-void RemoteGeometryMessage::writeData(QDataStream &ds)
+void RemotePortMessage::writeData(QDataStream &ds)
 {
-    GeometryMessage::writeData(ds);
-    ds << m_port;
+    ds << (qint32)m_port;
 }
 
-RemoteGeometryMessage::RemoteGeometryMessage(const RemoteGeometryMessage &other) :
-    GeometryMessage(other.m_appUid, other.m_geometry),
+RemotePortMessage::RemotePortMessage(const RemotePortMessage &other) :
+    Message(other.m_appUid, other.m_messageType),
     m_port(other.m_port)
 {
-    m_messageType = MessageType::RemoteGeometry;
 }
 
-QDebug operator<<(QDebug d, const RemoteGeometryMessage& rgm)
+QDebug operator<<(QDebug d, const RemotePortMessage& rpm)
 {
-    return d << QString("RemoteGeometryMessage(appId: %1, port: %2, geometry:(%3, %4, %5, %6))").arg(rgm.port()).arg(rgm.appUid()).arg(rgm.x()).arg(rgm.y()).arg(rgm.width()).arg(rgm.height()).toLocal8Bit().data();
+    return d << QString("RemotePortMessage(appId: %1, port: %2)").arg(rpm.port()).arg(rpm.appUid()).toLocal8Bit().data();
 }
 
 
