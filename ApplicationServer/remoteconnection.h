@@ -22,6 +22,7 @@ public:
     void paintImages(QRegion region, class QPainter* painter);
     void ReguestApplicationLaunch(QString appUid, QString data);
     void getApplication(QString appUid);
+    void closeApplication(QString appUid);
 
 signals:
     void connectionReady();
@@ -43,6 +44,7 @@ private:
     void handleGeometryUpdate(QString appUid, QRect rect);
     void handleApplicationRequest(QString appUid);
     void handleRemotePort(QString appUid, int port);
+    void handleCloseApplication(QString appUid);
     void setupRemoteSocket();
 
 private:

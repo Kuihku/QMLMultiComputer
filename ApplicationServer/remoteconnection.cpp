@@ -95,6 +95,16 @@ void RemoteConnection::getApplication(QString appUid)
     rgam.write(m_remoteSocket);
 }
 
+void RemoteConnection::closeApplication(QString appUid)
+{
+    RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
+    if (remoteApplication) {
+        m_remoteApplications.remove(appUid);
+        Message cm(appUid, MessageType::Close);
+        cm.write(m_remoteSocket);
+    }
+}
+
 void RemoteConnection::localCloneDataAvailable(CloneDataMessage* cdm)
 {
     cdm->write(m_remoteSocket);
@@ -145,6 +155,10 @@ void RemoteConnection::readSocket()
             case MessageType::RemoteApplication : {
                 RemoteApplicationMessage* ram(dynamic_cast<RemoteApplicationMessage*>(m));
                 applicationReceived(ram);
+                break;
+            }
+            case MessageType::Close : {
+                handleCloseApplication(m->appUid());
                 break;
             }
             // TODO: Remove later, For testing purposes only
@@ -245,6 +259,16 @@ void RemoteConnection::handleRemotePort(QString appUid, int port)
     if (!remoteApplication) {
         remoteApplication = new RemoteApplication(m_remoteSocket->peerAddress(), port, this);
         m_remoteApplications.insert(appUid, remoteApplication);
+    }
+}
+
+void RemoteConnection::handleCloseApplication(QString appUid)
+{
+    RemoteApplication* remoteApplication(m_remoteApplications.value(appUid, NULL));
+    if (remoteApplication) {
+        m_remoteApplications.remove(appUid);
+        emit imageUpdate(remoteApplication->geometry());
+        delete remoteApplication;
     }
 }
 

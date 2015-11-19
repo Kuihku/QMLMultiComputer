@@ -249,9 +249,23 @@ void Server::localConnectionClosed()
 {
     LocalConnection* localConnection(qobject_cast<LocalConnection*>(sender()));
     if (localConnection) {
+        QString appUid(localConnection->appUid());
+        RemoteConnection* remoteConnection(m_remoteConnections.value(Remote::East, NULL));
+        if (remoteConnection) {
+            remoteConnection->closeApplication(appUid);
+        }
+        remoteConnection = m_remoteConnections.value(Remote::South, NULL);
+        if (remoteConnection) {
+            remoteConnection->closeApplication(appUid);
+        }
+        remoteConnection = m_remoteConnections.value(Remote::SouthEast, NULL);
+        if (remoteConnection) {
+            remoteConnection->closeApplication(appUid);
+        }
+
         m_view->update(localConnection->geometry());
         m_localConnections.removeAll(localConnection);
-        localConnection->deleteLater();
+        delete localConnection;
     }
     if (m_localConnections.isEmpty()) {
         qDebug("Server::localConnectionClosed - last connection closed");
