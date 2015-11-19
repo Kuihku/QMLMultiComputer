@@ -31,6 +31,7 @@ private:
     void setItemToMessage(CloneDataMessage& cdm, class QQuickItem* item, int index = 0);
     void handleCloneData(CloneDataMessage* cdm);
     void setMessageToItem(CloneDataMessage* cdm, class QQuickItem *item, int index = 0);
+    void handleMouse(MouseMessage* mm);
 
 private:
     QString m_appUid;

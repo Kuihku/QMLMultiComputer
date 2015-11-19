@@ -10,6 +10,7 @@
 #include <QMapIterator>
 #include <QPainter>
 #include <QDir>
+#include <QMouseEvent>
 
 #include <QDebug>
 
@@ -105,6 +106,27 @@ void RemoteConnection::closeApplication(QString appUid)
     }
 }
 
+void RemoteConnection::sendMouseEventToApplication(QMouseEvent* e)
+{
+    QMapIterator<QString, RemoteApplication*> remoteApplicationIterator(m_remoteApplications);
+    QPoint pos(e->pos());
+    while (!e->isAccepted() && remoteApplicationIterator.hasNext()) {
+        remoteApplicationIterator.next();
+        RemoteApplication* remoteApplication(remoteApplicationIterator.value());
+        QRect geometry(remoteApplication->geometry());
+        if (remoteApplication->geometry().contains(pos)) {
+            pos.setX(pos.x() - geometry.x());
+            pos.setY(pos.y() - geometry.y());
+            QMouseEvent* me(new QMouseEvent(e->type(), pos, e->windowPos(), e->screenPos(), e->button(), e->buttons(), e->modifiers()));
+            me->setTimestamp(e->timestamp());
+            MouseMessage mm(remoteApplicationIterator.key(), me);
+            mm.write(m_remoteSocket);
+            delete me;
+            e->accept();
+        }
+    }
+}
+
 void RemoteConnection::localCloneDataAvailable(CloneDataMessage* cdm)
 {
     cdm->write(m_remoteSocket);
@@ -143,6 +165,11 @@ void RemoteConnection::readSocket()
                 emit cloneApplicationReceived(cdm);
                 break;
             }
+            case MessageType::Mouse : {
+                MouseMessage* mm(dynamic_cast<MouseMessage*>(m));
+                emit inputReceived(mm);
+                break;
+            }
             case MessageType::RemoteGetApplication : {
                 handleApplicationRequest(m->appUid());
                 break;
@@ -154,7 +181,7 @@ void RemoteConnection::readSocket()
             }
             case MessageType::RemoteApplication : {
                 RemoteApplicationMessage* ram(dynamic_cast<RemoteApplicationMessage*>(m));
-                applicationReceived(ram);
+                emit applicationReceived(ram);
                 break;
             }
             case MessageType::Close : {
@@ -222,7 +249,9 @@ void RemoteConnection::handleGeometryUpdate(QString appUid, QRect rect)
         RemotePortMessage rpm(appUid, remoteApplication->port());
         rpm.write(m_remoteSocket);
     }
+    QRect updateRect(remoteApplication->geometry() | rect);
     remoteApplication->updateGeometry(rect);
+    emit imageUpdate(updateRect);
 }
 
 void RemoteConnection::handleApplicationRequest(QString appUid)
@@ -278,4 +307,3 @@ void RemoteConnection::setupRemoteSocket()
     connect(m_remoteSocket, SIGNAL(disconnected()), this, SIGNAL(connectionClosed()));
     connect(m_remoteSocket, SIGNAL(readyRead()), this, SLOT(readSocket()));
 }
-

@@ -6,6 +6,7 @@
 #include <QSize>
 #include <QRect>
 #include <QDebug>
+#include <QEvent>
 
 namespace MessageType {
     enum {
@@ -17,6 +18,7 @@ namespace MessageType {
         Geometry,
         CloneRequest,
         CloneData,
+        Mouse,
         RemoteDirection,
         RemoteLaunch,
         RemoteView,
@@ -44,6 +46,7 @@ namespace MessageType {
     type == MessageType::Geometry ? "Geometry" : \
     type == MessageType::CloneRequest ? "CloneRequest" : \
     type == MessageType::CloneData ? "CloneData" : \
+    type == MessageType::Mouse ? "Mouse" : \
     type == MessageType::RemoteDirection ? "RemoteDirection" : \
     type == MessageType::RemoteLaunch ? "RemoteLaunch" : \
     type == MessageType::RemoteView ? "RemoteView" : \
@@ -183,6 +186,66 @@ protected:
 };
 
 COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const MoveMessage& mm);
+
+class COMMUNICATIONSHARED_EXPORT InputMessage : public Message
+{
+
+public:
+    InputMessage(QString appUid = QString(), int messageType = MessageType::Undefined, QEvent::Type eventType = QEvent::None, Qt::KeyboardModifiers modifiers = Qt::NoModifier, quint64 timestamp = 0);
+    QEvent::Type eventType() const;
+    Qt::KeyboardModifiers modifiers() const;
+    quint64 timestamp() const;
+
+protected:
+    InputMessage(QString appUid, int messageType, QDataStream& ds);
+    virtual void writeData(QDataStream& ds);
+    InputMessage(const InputMessage& other);
+
+protected:
+    QEvent::Type m_eventType;
+    Qt::KeyboardModifiers m_modifiers;
+    quint64 m_timestamp;
+
+//    friend class Message;
+};
+
+
+class COMMUNICATIONSHARED_EXPORT MouseMessage : public InputMessage
+{
+
+public:
+    MouseMessage(QString appUid, class QMouseEvent* event);
+    QPointF localPos() const;
+    QPointF windowPos() const;
+    QPointF screenPos() const;
+    Qt::MouseButton button() const;
+    Qt::MouseButtons buttons() const;
+
+    void addX(int x);
+    void addY(int y);
+
+    // Note: Returned QMouseEvent* ownership is changed and caller is responsible to delete
+    class QMouseEvent* createMouseEvent() const;
+
+protected:
+    MouseMessage(QString appUid, QDataStream& ds);
+    virtual void writeData(QDataStream& ds);
+
+private:
+    MouseMessage(const MouseMessage& other);
+
+protected:
+    QPointF m_localPos;
+    QPointF m_windowPos;
+    QPointF m_screenPos;
+    Qt::MouseButton m_button;
+    Qt::MouseButtons m_buttons;
+
+    friend class Message;
+};
+
+COMMUNICATIONSHARED_EXPORT QDebug operator<<(QDebug d, const MoveMessage& mm);
+
 
 class COMMUNICATIONSHARED_EXPORT SizeMessage : public Message
 {

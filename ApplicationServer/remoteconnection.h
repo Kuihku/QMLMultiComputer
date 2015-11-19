@@ -23,6 +23,7 @@ public:
     void ReguestApplicationLaunch(QString appUid, QString data);
     void getApplication(QString appUid);
     void closeApplication(QString appUid);
+    void sendMouseEventToApplication(class QMouseEvent* e);
 
 signals:
     void connectionReady();
@@ -31,6 +32,7 @@ signals:
     void launchApplication(QString, QString);
     void cloneApplicationReceived(class CloneDataMessage*);
     void applicationReceived(class RemoteApplicationMessage*);
+    void inputReceived(class InputMessage*);
 
 public slots:
     void localCloneDataAvailable(class CloneDataMessage* cdm);

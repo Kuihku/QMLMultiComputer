@@ -4,6 +4,7 @@
 #include <QBuffer>
 #include <QDataStream>
 #include <QPainter>
+#include <QMouseEvent>
 
 RemoteApplication::RemoteApplication(QHostAddress IPv4, quint16 port, QObject *parent) :
     QObject(parent),

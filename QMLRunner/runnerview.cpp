@@ -13,8 +13,13 @@
 #include <QQuickItem>
 #include <QMetaObject>
 #include <QCoreApplication>
+#include <QMouseEvent>
 
 #include <QDebug>
+
+bool qt_sendSpontaneousEvent(QObject* receiver, QEvent* event) {
+    return QCoreApplication::sendSpontaneousEvent(receiver, event);
+}
 
 RunnerView::RunnerView(QString appUid, QString server, QWidget* parent) :
     QQuickWidget(parent),
@@ -87,12 +92,13 @@ void RunnerView::socketDisconnected()
 
 void RunnerView::socketBytesWritten(qint64 bytes)
 {
-    qDebug() << "RunnerView::socketBytesWritten - bytes:" << bytes;
+    Q_UNUSED(bytes)
+//    qDebug() << "RunnerView::socketBytesWritten - bytes:" << bytes;
 }
 
 void RunnerView::readSocket()
 {
-    qDebug() << "RunnerView::readSocket - bytes available:" << m_socket->bytesAvailable();
+//    qDebug() << "RunnerView::readSocket - bytes available:" << m_socket->bytesAvailable();
     Message* m(Message::read(m_socket));
     if (m) {
         switch (m->type()) {
@@ -104,6 +110,11 @@ void RunnerView::readSocket()
             case MessageType::CloneData : {
                 CloneDataMessage* cdm(dynamic_cast<CloneDataMessage*>(m));
                 handleCloneData(cdm);
+                break;
+            }
+            case MessageType::Mouse : {
+                MouseMessage* mm(dynamic_cast<MouseMessage*>(m));
+                handleMouse(mm);
                 break;
             }
             case MessageType::Close : quitApplication(); break;
@@ -130,6 +141,7 @@ void RunnerView::paintEvent(QPaintEvent* event)
 
 void RunnerView::resizeEvent(QResizeEvent *event)
 {
+    qDebug() << "RunnerView::resizeEvent - geometry:" << geometry();
     QQuickWidget::resizeEvent(event);
     GeometryMessage gm(m_appUid, geometry());
     gm.write(m_socket);
@@ -137,6 +149,7 @@ void RunnerView::resizeEvent(QResizeEvent *event)
 
 void RunnerView::moveEvent(QMoveEvent *event)
 {
+    qDebug() << "RunnerView::moveEvent - geometry:" << geometry();
     QQuickWidget::moveEvent(event);
     GeometryMessage gm(m_appUid, geometry());
     gm.write(m_socket);
@@ -193,4 +206,11 @@ void RunnerView::setMessageToItem(CloneDataMessage *cdm, QQuickItem* item, int i
         QQuickItem* nextItem(childItemList.at(i));
         setMessageToItem(cdm, nextItem, ++index);
     }
+}
+
+void RunnerView::handleMouse(MouseMessage* mm)
+{
+    QMouseEvent* me(mm->createMouseEvent());
+    qt_sendSpontaneousEvent(this, me);
+    delete me;
 }

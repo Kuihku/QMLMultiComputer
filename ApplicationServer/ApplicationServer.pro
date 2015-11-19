@@ -19,7 +19,7 @@ HEADERS += \
     localconnection.h \
     remoteconnection.h \
     mainview.h \
-    windowholder.h \
+    windowhandler.h \
     remoteconnectioninfo.h \
     remoteapplication.h
 

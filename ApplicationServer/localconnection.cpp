@@ -4,6 +4,7 @@
 #include <QSharedMemory>
 #include <QBuffer>
 #include <QPainter>
+#include <QMouseEvent>
 
 #include <QDebug>
 
@@ -84,6 +85,17 @@ void LocalConnection::close()
 {
     Message m(m_appUid, MessageType::Close);
     m.write(m_socket);
+}
+
+void LocalConnection::sendMouseEvent(QMouseEvent *event)
+{
+    MouseMessage mm(m_appUid, event);
+    mm.write(m_socket);
+}
+
+void LocalConnection::handleInput(InputMessage* im)
+{
+    im->write(m_socket);
 }
 
 void LocalConnection::socketAboutToClose()

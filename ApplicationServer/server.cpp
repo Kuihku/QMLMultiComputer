@@ -9,6 +9,10 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QFile>
+#include <QMouseEvent>
+#include <QWheelEvent>
+#include <QKeyEvent>
+#include <QPaintEvent>
 #include <QPainter>
 #include <QMapIterator>
 #include <QNetworkInterface>
@@ -60,11 +64,26 @@ Server::~Server()
     delete m_view;
 }
 
-void Server::paintWindows(QRect rect, QRegion region, QPainter* painter)
+void Server::mouseViewEvent(QMouseEvent* event)
 {
+    sendMouseEventToApplication(event);
+}
+
+void Server::wheelViewEvent(QWheelEvent* event)
+{
+    Q_UNUSED(event)
+}
+
+void Server::keyViewEvent(QKeyEvent* event)
+{
+    Q_UNUSED(event)
+}
+
+void Server::paintViewEvent(QPaintEvent* event, QPainter* painter)
+{
+    QRegion region(event->region());
 //    qDebug() << "Server::paintWindows - rect:" << rect << "- region:" << region;
 //    qDebug("Server::paintWindows - painter: %p", painter);
-    Q_UNUSED(rect)
 
     QMapIterator<Remote::Direction, RemoteConnection*> remoteConnectionIterator(m_remoteConnections);
     while (remoteConnectionIterator.hasNext()) {
@@ -346,6 +365,41 @@ void Server::applicationReceived(RemoteApplicationMessage *ram)
     QMetaObject::invokeMethod(this, "launchApplication", Qt::QueuedConnection, Q_ARG(QString, appUid), Q_ARG(QString, QString()));
 }
 
+void Server::inputReceived(InputMessage* im)
+{
+    QString appUid(im->appUid());
+    int localConnectionCount(m_localConnections.count());
+    for (int i(0); i < localConnectionCount; i++) {
+        LocalConnection* localConnection(m_localConnections.at(i));
+        if (appUid.compare(localConnection->appUid()) == 0) {
+            int messageType(im->type());
+            if (messageType == MessageType::Mouse) {
+                RemoteConnection* remoteConnection(qobject_cast<RemoteConnection*>(sender()));
+                if (remoteConnection) {
+                    QRect vieport(m_view->geometry());
+                    MouseMessage* mm(dynamic_cast<MouseMessage*>(im));
+                    Remote::Direction remoteDirection(remoteConnection->remoteDirection());
+                    if (remoteDirection == Remote::East) {
+                        mm->addX(vieport.width());
+                    }
+                    else if (remoteDirection == Remote::South) {
+                        mm->addY(vieport.height());
+                    }
+                    else if (remoteDirection == Remote::SouthEast) {
+                        mm->addX(vieport.width());
+                        mm->addY(vieport.height());
+                    }
+                    localConnection->handleInput(mm);
+                }
+            }
+            else {
+                qWarning("LocalConnection::handleInput - Error not handling message: %s", qPrintable(MSGTYPETOSTRING(messageType)));
+            }
+            break;
+        }
+    } // end of for loop
+}
+
 QHostAddress Server::myIPv4()
 {
     QHostAddress myAddress;
@@ -432,6 +486,32 @@ void Server::setupRemoteConnection(RemoteConnection* remoteConnection)
     connect(remoteConnection, SIGNAL(launchApplication(QString, QString)), this, SLOT(launchApplication(QString, QString)));
     connect(remoteConnection, SIGNAL(cloneApplicationReceived(CloneDataMessage*)), this, SLOT(cloneApplicationReceived(CloneDataMessage*)), Qt::DirectConnection);
     connect(remoteConnection, SIGNAL(applicationReceived(class RemoteApplicationMessage*)), this, SLOT(applicationReceived(class RemoteApplicationMessage*)), Qt::DirectConnection);
+    connect(remoteConnection, SIGNAL(inputReceived(class InputMessage*)), this, SLOT(inputReceived(class InputMessage*)), Qt::DirectConnection);
 
+}
+
+void Server::sendMouseEventToApplication(QMouseEvent* e)
+{
+    int localConnectionCount(m_localConnections.count());
+    QPoint pos(e->pos());
+    for (int i(0); i < localConnectionCount; i++) {
+        LocalConnection* localConnection(m_localConnections.at(i));
+        QRect connectionGeometry(localConnection->geometry());
+        if (connectionGeometry.contains(pos)) {
+            pos.setX(pos.x() - connectionGeometry.x());
+            pos.setY(pos.y() - connectionGeometry.y());
+            QMouseEvent* me(new QMouseEvent(e->type(), pos, e->windowPos(), e->screenPos(), e->button(), e->buttons(), e->modifiers()));
+            me->setTimestamp(e->timestamp());
+            localConnection->sendMouseEvent(me);
+            delete me;
+            e->accept();
+            break;
+        }
+    }
+    QMapIterator<Remote::Direction, RemoteConnection*> remoteConnectionIterator(m_remoteConnections);
+    while (!e->isAccepted() && remoteConnectionIterator.hasNext()) {
+        remoteConnectionIterator.next();
+        remoteConnectionIterator.value()->sendMouseEventToApplication(e);
+    }
 }
 

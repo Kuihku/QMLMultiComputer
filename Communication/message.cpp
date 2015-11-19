@@ -2,6 +2,7 @@
 
 #include <QIODevice>
 #include <QDataStream>
+#include <QMouseEvent>
 #include <QThread>
 
 #include <QDebug>
@@ -52,6 +53,12 @@ Message* Message::read(QIODevice* socket)
         case MessageType::CloneData : {
             if (bytesAvailable > 0) {
                 msg = new CloneDataMessage(appUid, ds);
+            }
+            break;
+        }
+        case MessageType::Mouse : {
+            if (bytesAvailable > 0) {
+                msg = new MouseMessage(appUid, ds);
             }
             break;
         }
@@ -551,6 +558,146 @@ QDebug operator<<(QDebug d, const CloneDataMessage& cdm)
 }
 
 
+// InputMessage
+
+InputMessage::InputMessage(QString appUid, int messageType, QEvent::Type eventType, Qt::KeyboardModifiers modifiers, quint64 timestamp) :
+    Message(appUid, messageType),
+    m_eventType(eventType),
+    m_modifiers(modifiers),
+    m_timestamp(timestamp)
+{
+}
+
+QEvent::Type InputMessage::eventType() const
+{
+    return m_eventType;
+}
+
+Qt::KeyboardModifiers InputMessage::modifiers() const
+{
+    return m_modifiers;
+}
+
+quint64 InputMessage::timestamp() const
+{
+    return m_timestamp;
+}
+
+InputMessage::InputMessage(QString appUid, int messageType, QDataStream &ds) :
+    Message(appUid, messageType)
+{
+    quint32 eventType, modifiers;
+    ds >> eventType >> modifiers;
+    m_eventType = (QEvent::Type)eventType;
+    m_modifiers = (Qt::KeyboardModifiers) modifiers;
+    ds >> m_timestamp;
+}
+
+void InputMessage::writeData(QDataStream &ds)
+{
+    ds << (quint32)m_eventType << (quint32)m_modifiers;
+    ds << m_timestamp;
+}
+
+InputMessage::InputMessage(const InputMessage &other) :
+    Message(other.m_appUid, other.m_messageType),
+    m_eventType(other.m_eventType),
+    m_modifiers(other.m_modifiers),
+    m_timestamp(other.m_timestamp)
+{
+}
+
+
+// MouseMessage
+MouseMessage::MouseMessage(QString appUid, QMouseEvent* event) :
+    InputMessage(appUid, MessageType::Mouse, event->type(), event->modifiers(), event->timestamp()),
+    m_localPos(event->localPos()),
+    m_windowPos(event->windowPos()),
+    m_screenPos(event->screenPos()),
+    m_button(event->button()),
+    m_buttons(event->buttons())
+{
+}
+
+MouseMessage::MouseMessage(QString appUid, QDataStream &ds) :
+    InputMessage(appUid, MessageType::Mouse, ds)
+{
+    quint32 button, buttons;
+    ds >> button >> buttons;
+    m_button = (Qt::MouseButton)button;
+    m_buttons = (Qt::MouseButtons)buttons;
+    ds >> m_localPos >> m_windowPos >> m_screenPos;
+}
+
+void MouseMessage::writeData(QDataStream &ds)
+{
+    InputMessage::writeData(ds);
+    ds << (quint32)m_button << (quint32)m_buttons << m_localPos << m_windowPos << m_screenPos;
+}
+
+QPointF MouseMessage::localPos() const
+{
+    return m_localPos;
+}
+
+QPointF MouseMessage::windowPos() const
+{
+    return m_windowPos;
+}
+
+QPointF MouseMessage::screenPos() const
+{
+    return m_screenPos;
+}
+
+Qt::MouseButton MouseMessage::button() const
+{
+    return m_button;
+}
+
+Qt::MouseButtons MouseMessage::buttons() const
+{
+    return m_buttons;
+}
+
+void MouseMessage::addX(int x)
+{
+    m_localPos.setX(m_localPos.x() + x);
+    m_windowPos.setX(m_localPos.x() + x);
+    m_screenPos.setX(m_localPos.x() + x);
+}
+
+void MouseMessage::addY(int y)
+{
+    m_localPos.setY(m_localPos.y() + y);
+    m_windowPos.setY(m_localPos.y() + y);
+    m_screenPos.setY(m_localPos.y() + y);
+}
+
+QMouseEvent* MouseMessage::createMouseEvent() const
+{
+    QMouseEvent* mouseEvent(new QMouseEvent(m_eventType, m_localPos, m_windowPos, m_screenPos, m_button, m_buttons, m_modifiers));
+    mouseEvent->setTimestamp(m_timestamp);
+    return mouseEvent;
+}
+
+MouseMessage::MouseMessage(const MouseMessage& other) :
+    // InputMessage(appUid, MessageType::Mouse, other.eventType(), other.modifiers()),
+    InputMessage(other),
+    m_localPos(other.localPos()),
+    m_windowPos(other.windowPos()),
+    m_screenPos(other.screenPos()),
+    m_button(other.button()),
+    m_buttons(other.buttons())
+{
+}
+
+QDebug operator<<(QDebug d, const MouseMessage& mm)
+{
+    return d << QString("MouseMessage(appId: %1, type: %2)").arg(mm.appUid()).arg(mm.eventType()).toLocal8Bit().data();
+}
+
+
 // RemoteApplicationMessage
 
 RemoteApplicationMessage::RemoteApplicationMessage(QString appUid) :
@@ -602,3 +749,5 @@ QDebug operator<<(QDebug d, const RemoteApplicationMessage& ram)
 
 
 // EOF
+
+

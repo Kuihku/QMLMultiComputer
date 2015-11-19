@@ -19,6 +19,8 @@ public:
     void cloneApplication();
     void setProperties(class CloneDataMessage* cdm);
     void close();
+    void sendMouseEvent(class QMouseEvent* event);
+    void handleInput(class InputMessage* im);
 
 protected slots:
     void socketAboutToClose();

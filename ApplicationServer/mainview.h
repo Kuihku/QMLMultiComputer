@@ -7,9 +7,16 @@ class MainView : public QWidget
 {
     Q_OBJECT
 public:
-    explicit MainView(class WindowHolder* windowHolder, QWidget *parent = Q_NULLPTR);
+    explicit MainView(class WindowHandler* windowHandler, QWidget *parent = Q_NULLPTR);
 
 protected:
+    virtual void mousePressEvent(class QMouseEvent* event);
+    virtual void mouseReleaseEvent(class QMouseEvent* event);
+    virtual void mouseDoubleClickEvent(class QMouseEvent* event);
+    virtual void mouseMoveEvent(class QMouseEvent* event);
+    virtual void wheelEvent(class QWheelEvent* event);
+    virtual void keyPressEvent(class QKeyEvent* event);
+    virtual void keyReleaseEvent(class QKeyEvent* event);
     virtual void paintEvent(class QPaintEvent* event);
 
 signals:
@@ -17,7 +24,7 @@ signals:
 public slots:
 
 private:
-    class WindowHolder* m_windowHolder;
+    class WindowHandler* m_windowHandler;
 };
 
 #endif // MAINVIEW_H
