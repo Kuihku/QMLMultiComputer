@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       = core network testlib
+QT       = core gui network testlib
 
 TARGET = tst_communicationtest
 CONFIG   += console
