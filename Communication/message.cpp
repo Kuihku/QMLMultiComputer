@@ -101,7 +101,8 @@ Message* Message::read(QIODevice* socket)
         case MessageType::CloneRequest: ; // fall through
         case MessageType::RemoteView : ; // fall through
         case MessageType::RemoteGetApplication: ; // fall through
-        case MessageType::RemotePing : {
+        case MessageType::RemotePing : ; // fall through
+        case MessageType::Close : {
             qDebug() << "Message::read - messageType: Message";
             msg = new Message(appUid, messageType);
             break;
