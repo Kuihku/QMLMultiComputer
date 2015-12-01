@@ -106,7 +106,6 @@ void LocalConnection::socketAboutToClose()
 void LocalConnection::socketReadyRead()
 {
     qDebug() << "LocalConnection::socketReadyRead - bytes available:" << m_socket->bytesAvailable();
-
     Message* m(Message::read(m_socket));
     if (m) {
         switch (m->type()) {
@@ -130,6 +129,9 @@ void LocalConnection::socketReadyRead()
             }
         }
         delete m;
+    }
+    if (m_socket->bytesAvailable()) {
+        QMetaObject::invokeMethod(this, "socketReadyRead", Qt::QueuedConnection);
     }
 }
 

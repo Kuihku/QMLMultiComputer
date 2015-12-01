@@ -28,7 +28,7 @@ RunnerView::RunnerView(QString appUid, QString server, QWidget* parent) :
     m_shared(new QSharedMemory(appUid, this))
 {
     qDebug() << "RunnerView::RunnerView";
-    QObject::connect(engine(), SIGNAL(quit()), this, SLOT(quitApplication()));
+    connect(engine(), SIGNAL(quit()), this, SLOT(quitApplication()));
     connect(m_socket, SIGNAL(connected()), this, SLOT(socketConnected()));
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(socketError(QLocalSocket::LocalSocketError)));
@@ -125,7 +125,9 @@ void RunnerView::readSocket()
         }
         delete m;
     }
-
+    if (m_socket->bytesAvailable()) {
+        QMetaObject::invokeMethod(this, "readSocket", Qt::QueuedConnection);
+    }
 }
 
 void RunnerView::quitApplication()
