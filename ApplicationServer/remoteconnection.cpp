@@ -135,8 +135,10 @@ void RemoteConnection::localCloneDataAvailable(CloneDataMessage* cdm)
 void RemoteConnection::socketConnected()
 {
     qDebug("RemoteConnection::socketConnected");
-    RemoteDirectionMessage rdm(QString(), m_remoteDirection);
-    Q_ASSERT(rdm.write(m_remoteSocket));
+    if (m_remoteDirection != Remote::Undefined) {
+        RemoteDirectionMessage rdm(QString(), m_remoteDirection);
+        Q_ASSERT(rdm.write(m_remoteSocket));
+    }
 }
 
 void RemoteConnection::readSocket()
