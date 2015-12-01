@@ -49,6 +49,7 @@ Message* Message::read(QIODevice* socket)
             return msg;
         }
         ds >> messageType >> appUid;
+        qDebug() << "Message::read - messageType:" << MSGTYPETOSTRING(messageType);
         switch (messageType) {
         case MessageType::CloneData : {
             if (bytesAvailable > 0) {
@@ -110,7 +111,6 @@ Message* Message::read(QIODevice* socket)
         case MessageType::RemoteGetApplication: ; // fall through
         case MessageType::RemotePing : ; // fall through
         case MessageType::Close : {
-            qDebug() << "Message::read - messageType: Message";
             msg = new Message(appUid, messageType);
             break;
         }
